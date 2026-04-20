@@ -220,3 +220,81 @@ aidlc-state.md を更新:
 **Context**: 要件ドキュメントのレビュー・承認待ち。
 
 ---
+
+## Requirements Approved + User Stories Stage Start
+
+**Timestamp**: 2026-04-20T18:35:00Z
+**User Input**: "一旦PRを作成してください" → "マージして次に進みましょう。"
+**AI Response**:
+1. `feature/overseas-safety-map-requirements` ブランチに要件関連5ファイルをコミット。
+2. GitHub PR #1 を作成し、`gh pr merge 1 --squash --delete-branch` で main にマージ（commit `df3e528`）。
+3. aidlc-state.md を「要件分析 承認済み」→「ユーザーストーリー 進行中（計画質問作成済み・回答待ち）」に更新。
+4. User Stories 実施判定を行い（High Priority 基準 4項目、Medium Priority 2項目該当）実施を決定。
+   - `aidlc-docs/inception/plans/user-stories-assessment.md` を生成。
+5. `aidlc-docs/inception/plans/story-generation-plan.md` を 8 件の計画質問付きで生成。
+   - ペルソナ構成・ブレイクダウン方式・粒度・記述形式・受け入れ基準形式・横断関心事の扱い・トレーサビリティ・優先度 の方針を確定する質問。
+**Context**: 計画質問の回答待ち。回答後に personas.md / stories.md を生成する。
+
+---
+
+## Story Plan Questions Answered
+
+**Timestamp**: 2026-04-20T18:50:00Z
+**User Input**: "done"
+**User Answers (verbatim)**:
+- Q1 [B + 自由記述: "認証をmustにしたいです"]
+- Q2 [A] User Journey-Based
+- Q3 [B] 中粒度（2〜3日、受け入れ基準5〜10個）
+- Q4 [C] Classic + Job Story 併用
+- Q5 [A] Given/When/Then
+- Q6 [空欄]
+- Q7 [空欄]
+- Q8 [空欄]
+
+**AI Response**:
+Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響するため、`story-generation-plan-clarification-questions.md` を4件で生成。
+
+---
+
+## Story Plan Clarifications Answered
+
+**Timestamp**: 2026-04-20T19:00:00Z
+**User Input**: "done"
+**User Answers (verbatim)**:
+- Clarify A [A] 全画面ログイン必須
+- Clarify B [A] 横断関心事は各機能ストーリーの受け入れ基準に折り込む（単独ストーリー化しない）
+- Clarify C [A] 既定（ストーリー内明記＋末尾マトリクス）
+- Clarify D [A] 既定（MVP / Post-MVP の2区分）
+
+**AI Actions**:
+1. `requirements.md` FR-APP-05 / FR-APP-06 を「全画面ログイン必須」「BFF は Firebase ID Token を検証」の表現に更新。
+2. `aidlc-docs/inception/user-stories/personas.md` を生成（登録ユーザー1種類）。
+3. `aidlc-docs/inception/user-stories/stories.md` を生成: MVP 12 ストーリー（US-01〜US-12）、Post-MVP 3 ストーリー（US-P01〜P03）、GWT 形式の受け入れ基準、トレーサビリティマトリクス（ストーリー→要件・要件→ストーリー両方向）、INVEST 適合チェック付き。
+4. `aidlc-state.md` を「ユーザーストーリー 承認待ち」に更新。
+
+**Context**: ユーザーストーリー完了、承認待ち。次ステージは Workflow Planning。
+
+---
+
+## Feature Addition — Crime Map (GIS)
+
+**Timestamp**: 2026-04-20T19:10:00Z
+**User Input**: "機能として犯罪が多い箇所をGISで表現したいです" → "3で。 MVPに入れたい。 はい。"
+**User Decision**:
+- アプローチ: **専用画面 + ヒートマップ + カロプレス併用**（ズームで切替）
+- スコープ: **MVP**
+- 「犯罪」の定義: **MOFA `infoType` コードでフィルタ**（具体コード集合は設計フェーズで確定）
+
+**AI Actions**:
+1. `requirements.md` に **FR-APP-08（犯罪マップ画面）** を追加:
+   - 独立メニュー項目
+   - 広域=国別カロプレス、詳細ズーム=ヒートマップに自動切替
+   - 期間フィルタ（7日 / 30日 / 90日 / 全期間）
+   - フォールバック座標アイテムはヒートマップに含めず、カロプレス集計のみに含める（誤解防止）
+   - 凡例・色スケール・合計件数を常時表示、国タップで US-06 絞り込みに遷移
+   - 「犯罪」判定の `infoType` コード集合確定は設計フェーズで実施
+2. `stories.md` に **US-13（犯罪マップ）** を追加、ジャーニー概観図・トレーサビリティマトリクス（両方向）を更新。
+
+**Context**: 犯罪マップ機能を MVP に組み込み完了。ユーザーストーリー承認待ち（US-13 を含めたレビューが必要）。
+
+---
