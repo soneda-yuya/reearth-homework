@@ -298,3 +298,65 @@ Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響す
 **Context**: 犯罪マップ機能を MVP に組み込み完了。ユーザーストーリー承認待ち（US-13 を含めたレビューが必要）。
 
 ---
+
+## User Stories Approved + Workflow Planning Start
+
+**Timestamp**: 2026-04-20T19:25:00Z
+**User Input**: "承認します。 PRをマージしてください"
+**AI Response**:
+1. PR #2 を `gh pr merge --squash --delete-branch` で main にマージ（commit `a0032ed`）。
+2. Workflow Planning ステージへ移行。
+3. `aidlc-docs/inception/plans/execution-plan.md` を生成:
+   - リスク評価: Medium-High（新規・多サブシステム・外部 API 依存・LLM 品質不明）
+   - Mermaid フローチャートで全フェーズの状態（COMPLETED / SKIP / EXECUTE / PLACEHOLDER）を可視化
+   - Application Design / Units Planning / Units Generation / Functional Design / NFR Requirements / NFR Design / Infrastructure Design / Code Generation / Build and Test を **EXECUTE**
+   - Reverse Engineering は SKIPPED（Greenfield）、Operations は PLACEHOLDER
+4. `aidlc-state.md` を「ワークフロー計画 承認待ち」に更新、Construction フェーズのサブステージを明示。
+
+**Context**: ワークフロー計画ドキュメント生成完了。承認後に Application Design へ進む。
+
+---
+
+## Workflow Planning Approved + Application Design Start
+
+**Timestamp**: 2026-04-20T19:35:00Z
+**User Input**: "Approve & Continue"
+**AI Actions**:
+1. aidlc-state.md を「ワークフロー計画 承認済み」「アプリケーション設計 進行中」に更新。
+2. `aidlc-docs/inception/plans/application-design-plan.md` を生成、10 件の計画質問（リポジトリ構成・Go モジュール構成・Flutter 構造・API スタイル・フレームワーク・状態管理・通知配信・LLM プロバイダ・抽象化深さ・エラー/観測性）を配置。
+
+**Context**: Application Design 計画質問の回答待ち。回答後に 5 つの設計成果物（components / component-methods / services / component-dependency / application-design 統合版）を生成する。
+
+---
+
+## Application Design Plan Answered + Artifacts Generated
+
+**Timestamp**: 2026-04-20T19:50:00Z
+**User Input**: "done"
+**User Answers (verbatim)**:
+- Q1 [B] 2リポジトリ分割（Go サーバーモノレポ + Flutter 別リポ）
+- Q2 [A] 単一 Go モジュール + internal サブパッケージ
+- Q3 [X + 自由記述: "Clean Architecture + MVVM"]
+- Q4 [C] Connect（gRPC 互換）
+- Q5 [D] Connect 採用のため不要
+- Q6 [A] Riverpod
+- Q7 [B] Pub/Sub 経由
+- Q8 [A] Anthropic Claude
+- Q9 [B] BFF / ingestion 両方 repository 抽象化
+- Q10 [A,B,C,D] %w ラップ + slog + OTel Metrics + OTel Traces
+
+**AI Actions**:
+1. 暗黙決定2件を設計に明文化:
+   - 通知 Cloud Function は Go で実装し `cmd/notifier` に配置（Q2 と整合）
+   - Repository は読み書き統合インターフェイス（Q9 [B] の最短実現）
+2. `aidlc-docs/inception/application-design/` に 5 つの成果物を生成:
+   - `components.md` — C-01〜C-13（サーバー）/ C-20〜C-23（Flutter）
+   - `component-methods.md` — 各 I/F の Go シグネチャと Connect proto 概略
+   - `services.md` — S-01 IngestionService / S-02 NotifierService / S-03 BffApiService / S-04 CmsSetupService + Flutter UseCase
+   - `component-dependency.md` — Mermaid で依存図・依存マトリクス・4 本のシーケンス図（ingestion / notifier / Flutter→BFF 読取 / 通知タップ）
+   - `application-design.md` — 統合インデックス、ディレクトリ構造、要件／ストーリートレース、次ステージ申し送り
+3. aidlc-state.md を「アプリケーション設計 承認待ち」に更新。
+
+**Context**: 5 成果物レビュー待ち。承認後に Units Planning へ進む。
+
+---
