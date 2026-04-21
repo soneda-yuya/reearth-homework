@@ -4,10 +4,21 @@
 
 | リポジトリ | 役割 | 使用技術 |
 |---|---|---|
-| **reearth-homework**（このリポジトリ） | Go サーバーモノレポ（ingestion / bff / setup / notifier） | Go 単一モジュール + internal サブパッケージ |
+| **reearth-homework**（このリポジトリ） | Go サーバーモノレポ（ingestion / bff / notifier / setup） | Go 単一モジュール、**DDD: Bounded Context × Layered Architecture** |
 | **overseas-safety-map-app**（新規作成予定） | Flutter アプリ | Dart / Flutter、Clean Architecture + MVVM、Riverpod |
 
 > **暗黙決定（設計者注）**: Q2 で単一 Go モジュールを選択、Q7 で Pub/Sub 分離型を選択したため、通知 Cloud Function（Pub/Sub サブスクライバ）は **Go で実装し、同じ Go モノレポの `cmd/notifier` に配置** する。言語統一のメリットとドメイン／リポジトリの再利用性を優先。
+
+## Bounded Context（バックエンド）
+
+| Context | 種別 | 説明 |
+|---|---|---|
+| `safetyincident` | **Core** | MOFA 取り込み・LLM 抽出・ジオコード・CMS 永続化・読み取り/検索。サブドメイン `crimemap` を内包。 |
+| `notification` | Supporting | 新着 Domain Event を受けて対象ユーザーへ FCM 配信。 |
+| `user` | Supporting | Firebase Auth 検証 + Firestore 上のユーザープロファイル（お気に入り・通知設定・FCM トークン）。 |
+| `cmssetup` | Supporting | reearth-cms の Project / Model / Field 冪等作成。 |
+
+各 Context 内は `domain` / `application` / `infrastructure` の 3 レイヤで構成し、依存は内向き。詳細なディレクトリ構造は [application-design.md §6](./application-design.md#6-リポジトリとディレクトリ構造予定) 参照。
 
 ---
 
@@ -17,81 +28,114 @@
 
 ---
 
-### サーバー側（Go モノレポ）
+### サーバー側（Go モノレポ、DDD）
 
-#### C-01: `MofaXmlClient`
-- **責務**: MOFA オープンデータの XML（`area/00A.xml` 初回 / `area/newarrivalA.xml` 継続）を HTTP で取得し、ドメインモデル `domain.MailItem` の列に変換する。
-- **公開インターフェイス**: `mofa.Client`（FetchAll / FetchNewArrivals / Parse）
-- **パッケージ**: `internal/mofa`
+各コンポーネントのパッケージ名は `internal/{context}/{layer}/...` 形式で示す。
 
-#### C-02: `LocationExtractor`
-- **責務**: `domain.MailItem`（title + mainText）を入力に、事故・事件の発生地名（文字列）を抽出する。LLM 依存は **抽象インターフェイス越し** に隔離する。
-- **公開インターフェイス**: `llm.LocationExtractor`
-- **既定実装**: `llm.ClaudeExtractor`（Anthropic Claude、Haiku クラスを想定、MVP 第一候補）
-- **パッケージ**: `internal/llm`
+#### 🟩 Context: `safetyincident`（Core）
 
-#### C-03: `Geocoder`
-- **責務**: 地名文字列を緯度経度に変換する。プライマリは外部サービス、フォールバックは国セントロイド。
-- **公開インターフェイス**: `geocode.Geocoder`
-- **既定実装**:
-  - `geocode.MapboxGeocoder`（primary）
-  - `geocode.CountryCentroidFallback`（国コード → セントロイド座標、オフライン内蔵データ）
-  - `geocode.Chain(primary, fallback)` で合成
-- **パッケージ**: `internal/geocode`
+##### C-01: MOFA Source（Port: `safetyincident.MofaSource`、Adapter: `mofa.HttpSource`）
+- **責務**: MOFA オープンデータの XML（`area/00A.xml` 初回 / `area/newarrivalA.xml` 継続）を取得し、ドメイン `MailItem` に変換する。
+- **Port**: `internal/safetyincident/domain` の `MofaSource`（FetchAll / FetchNewArrivals / Parse）
+- **Adapter**: `internal/safetyincident/infrastructure/mofa`（HTTP + XML パーサ）
 
-#### C-04: `SafetyIncidentRepository`
-- **責務**: 安全情報の **読み書きを一貫した単一インターフェイス** として提供する。MVP の実装は reearth-cms Integration API、将来は DB 直接化へ差し替え可能（Q9 [B] 両方抽象化）。
-- **公開インターフェイス**: `repository.SafetyIncidentRepository`
-- **既定実装**: `repository.CMSRepository`（reearth-cms Integration API 経由）
-- **パッケージ**: `internal/repository`
+##### C-02: Location Extractor（Port: `safetyincident.LocationExtractor`、Adapter: `llm.ClaudeExtractor`）
+- **責務**: `MailItem`（title + mainText）を入力に発生地名（文字列）を抽出する。LLM 依存は Port 越しに隔離。
+- **Port**: `internal/safetyincident/domain` の `LocationExtractor`
+- **Adapter**: `internal/safetyincident/infrastructure/llm`（Anthropic Claude Haiku、MVP 第一候補）
 
-#### C-05: `ReearthCmsClient`
-- **責務**: reearth-cms Integration REST API（`integration.yml` で定義される Project/Model/Field/Item CRUD）を呼ぶ低レベルクライアント。`SafetyIncidentRepository` から利用される。
-- **公開インターフェイス**: `cms.Client`（CreateItem / UpdateItem / ListItems / ItemsAsGeoJSON / CreateProject / CreateModel / CreateField など）
-- **パッケージ**: `internal/cms`
+##### C-03: Geocoder（Port: `safetyincident.Geocoder`、Adapter: Mapbox + Centroid + Chain）
+- **責務**: 地名文字列を緯度経度に変換。プライマリ外部サービス、フォールバック国セントロイド。
+- **Port**: `internal/safetyincident/domain` の `Geocoder`
+- **Adapter**:
+  - `internal/safetyincident/infrastructure/geocode` に `MapboxGeocoder` / `CountryCentroidFallback` / `Chain(primary, fallback)`
 
-#### C-06: `PubSubPublisher` / `PubSubSubscriber`
-- **責務**: Google Cloud Pub/Sub への publish/subscribe を提供し、ingestion → notifier の疎結合連携を実現する。
-- **公開インターフェイス**: `pubsub.Publisher` / `pubsub.Subscriber`
-- **トピック**: `safety-incident.new-arrival`（メッセージは `{keyCd, countryCd, infoType, title}`）
-- **パッケージ**: `internal/pubsub`
+##### C-04: Safety Incident Repository（Port: `safetyincident.Repository`、Adapter: `cms.Repository`）
+- **責務**: 安全情報の **読み書き統合 I/F**。ingestion / BFF の両方が同じ Port を利用（Q9 [B]）。MVP は reearth-cms、将来は DB 直接化へ差し替え可能（NFR-EXT-01）。
+- **Port**: `internal/safetyincident/domain` の `Repository`
+- **Adapter**: `internal/safetyincident/infrastructure/cms`（Integration API 経由）
 
-#### C-07: `FirebaseGateway`
-- **責務**: Firebase の 3 機能（Auth ID Token 検証 / Firestore 読み書き / FCM 配信）を横断する Gateway。
-- **公開インターフェイス**:
-  - `firebase.AuthVerifier`（ID Token 検証）
-  - `firebase.UserStore`（お気に入り・通知設定 の CRUD、Firestore 上の `users/{uid}` ドキュメント）
-  - `firebase.FcmSender`（トークン配列 → 通知配信）
-- **パッケージ**: `internal/firebase`
+##### C-05: reearth-cms Client（`platform/cmsx`）
+- **責務**: reearth-cms Integration REST API の低レベルクライアント。`safetyincident.infrastructure.cms` と `cmssetup.infrastructure.cms` の双方が利用。
+- **パッケージ**: `internal/platform/cmsx`（素材としての HTTP クライアント。ドメインには依存しない）
 
-#### C-08: `CrimeMapAggregator`
-- **責務**: 「犯罪」相当の `infoType` コード集合でフィルタし、国別カロプレス集計 or ヒートマップ用ポイント列を返す。フォールバック座標アイテムをヒートマップから除外するロジックも保持。
-- **公開インターフェイス**: `crimemap.Aggregator`
-- **パッケージ**: `internal/crimemap`
+##### C-06: Event Publisher / Consumer（ingestion→notification の Pub/Sub 連携）
+- **責務**: `safetyincident.domain.NewArrivalEvent` を Pub/Sub に publish、`notification` 側で consume する。
+- **Port（publish 側）**: `internal/safetyincident/domain.EventPublisher`
+- **Adapter（publish 側）**: `internal/safetyincident/infrastructure/eventbus`（Pub/Sub Publisher）
+- **Port（consume 側）**: `internal/notification/domain.NewArrivalConsumer`
+- **Adapter（consume 側）**: `internal/notification/infrastructure/eventbus`（Pub/Sub Subscriber）
+- **素材**: `internal/platform/pubsubx`（クライアント factory）
+- **トピック**: `safety-incident.new-arrival`（proto 定義は `proto/v1/pubsub.proto`）
 
-#### C-09: `IngestionApp`（`cmd/ingestion`）
-- **責務**: ingestion の main。スケジューラ実行エントリ。
-- **起動: CLI + 環境変数**。
-- **依存**: MofaXmlClient, LocationExtractor, Geocoder, SafetyIncidentRepository, PubSubPublisher, Observability
+##### C-08: Crime Map Aggregator（Subdomain: `safetyincident/crimemap`）
+- **責務**: 「犯罪」相当の `infoType` コード集合でフィルタし、国別カロプレス or ヒートマップ用ポイント列を返す。フォールバック座標アイテムはヒートマップから除外（FR-APP-08）。
+- **Port**: `internal/safetyincident/crimemap/domain.Aggregator`
+- **Policy**: `infotype_policy.go`（何を「犯罪」とみなすかのドメインポリシー）
+- **Adapter**: `internal/safetyincident/crimemap/infrastructure`（`safetyincident.Repository` を使う実装）
 
-#### C-10: `BffApp`（`cmd/bff`）
-- **責務**: Flutter 向け Connect サーバーの main。
-- **起動: HTTP サーバー（Cloud Run 等）**。
-- **依存**: SafetyIncidentRepository, CrimeMapAggregator, FirebaseGateway(Auth), Observability
+#### 🟦 Context: `user`（Supporting）
 
-#### C-11: `SetupApp`（`cmd/setup`）
-- **責務**: CMS の Project / Model / Field を冪等に作成する一回限りスクリプト。
-- **依存**: ReearthCmsClient, Observability
+##### C-07a: Auth Verifier（Port: `user.AuthVerifier`、Adapter: `firebaseauth.Verifier`）
+- **責務**: Firebase ID Token を検証し `VerifiedUser` を返す。
+- **Port**: `internal/user/domain.AuthVerifier`
+- **Adapter**: `internal/user/infrastructure/firebaseauth`
+- **素材**: `internal/platform/firebasex`
 
-#### C-12: `NotifierApp`（`cmd/notifier`）
-- **責務**: Pub/Sub サブスクライバとして `safety-incident.new-arrival` を受け、対象ユーザーを Firestore から取得して FCM で配信する。
-- **起動: Cloud Run（Eventarc トリガー）または Cloud Functions**。
-- **依存**: PubSubSubscriber, FirebaseGateway(UserStore+FcmSender), SafetyIncidentRepository (title 等を補完取得、必要時), Observability
+##### C-07b: User Profile Repository（Port: `user.ProfileRepository`、Adapter: Firestore 実装）
+- **責務**: Firestore 上の `users/{uid}` ドキュメントの CRUD。お気に入り国・通知設定・FCM トークンを保持。
+- **Port**: `internal/user/domain.ProfileRepository`
+- **Adapter**: `internal/user/infrastructure/firestore`
 
-#### C-13: `Observability`
-- **責務**: `log/slog` による構造化ログ、OpenTelemetry による Metrics / Traces、共通コンテキストの付与。
-- **公開インターフェイス**: `observability.Setup(ctx) (shutdownFn, error)`、`observability.Logger(ctx)`、`observability.Tracer(ctx)`、`observability.Meter(ctx)`
-- **パッケージ**: `internal/observability`
+#### 🟦 Context: `notification`（Supporting）
+
+##### C-07c / C-12 統合: Notification Dispatch
+- **責務**: Pub/Sub から受信した新着イベントに対して、購読者を解決し FCM で配信する。
+- **Domain**: `Notification`（VO）、`DispatchPolicy`（Domain Service）、`SubscriberStore`（Port）、`PushSender`（Port）、`NewArrivalConsumer`（Port）
+- **Application**: `DispatchOnNewArrivalUseCase`
+- **Adapter**:
+  - `internal/notification/infrastructure/firestore` — SubscriberStore 実装（**user コンテキストを直接 import せず、Firestore 上の同一ドキュメントを読む**。Context 独立性のため）
+  - `internal/notification/infrastructure/fcm` — PushSender 実装
+  - `internal/notification/infrastructure/eventbus` — Pub/Sub Subscriber
+
+#### 🟦 Context: `cmssetup`（Supporting）
+
+##### C-11: CMS Schema Bootstrapper
+- **責務**: 安全情報 Model / Field の宣言的定義を冪等に適用する。
+- **Domain**: `SchemaDefinition`（宣言的に「安全情報 Model にこのフィールドが必要」を表現する VO 群）
+- **Application**: `EnsureSchemaUseCase`
+- **Adapter**: `internal/cmssetup/infrastructure/cms/schema_applier.go`（`platform/cmsx` を使う）
+
+#### 🎯 Interface（入口）レイヤ
+
+##### C-10: BFF（Connect RPC ハンドラ群）
+- **配置**: `internal/interfaces/rpc`
+- **責務**: Connect サーバの RPC ハンドラ（SafetyIncident / CrimeMap / UserSetting）と `AuthInterceptor`。各 Context の Application Service に委譲するのみ。
+- **起動 main**: `cmd/bff/main.go`（Composition Root）
+
+##### C-09 / C-11 / C-12: Job ランナー
+- **配置**: `internal/interfaces/job`
+- **責務**: ingestion / setup / notifier のエントリポイント。`safetyincident.application.IngestUseCase` / `cmssetup.application.EnsureSchemaUseCase` / `notification.application.DispatchOnNewArrivalUseCase` をループ駆動する。
+- **起動 main**: `cmd/ingestion/main.go`、`cmd/setup/main.go`、`cmd/notifier/main.go`（Composition Root）
+
+#### 📦 Platform / Shared（横断）
+
+##### C-13: Observability
+- **責務**: `log/slog` による構造化ログ、OpenTelemetry Metrics / Traces、共通 context 属性の付与。
+- **公開関数**: `observability.Setup(ctx) (shutdownFn, error)`、`observability.Logger(ctx)`、`observability.Tracer(ctx)`、`observability.Meter(ctx)`
+- **パッケージ**: `internal/platform/observability`
+
+##### Platform 素材（ドメイン非依存の SDK ラッパー）
+- `internal/platform/config` — 環境変数ローダ
+- `internal/platform/connectserver` — HTTP + Connect サーバ組み立て
+- `internal/platform/pubsubx` — Pub/Sub クライアント factory
+- `internal/platform/cmsx` — reearth-cms HTTP クライアント（素材、ドメイン非依存）
+- `internal/platform/firebasex` — Firebase SDK factory（Auth/Firestore/FCM）
+- `internal/platform/mapboxx` — Mapbox SDK factory
+
+##### Shared Kernel
+- `internal/shared/errs` — エラー型・`%w` ラップ規約
+- `internal/shared/clock` — `time` 抽象（テスト容易性）
 
 ---
 
@@ -129,18 +173,18 @@
 
 ## コンポーネント俯瞰（機能 → コンポーネント対応）
 
-| 機能／要件 | 担当コンポーネント |
+| 機能／要件 | 担当 Context / コンポーネント |
 |---|---|
-| MOFA XML 取得・パース | C-01 |
-| LLM 地名抽出 | C-02 |
-| Mapbox ジオコーディング ＋ セントロイドフォールバック | C-03 |
-| CMS への書き込み・読み取り | C-04 + C-05 |
-| 新着検知による通知連携 | C-06 + C-12 + C-07 |
-| ID Token 認証 | C-07 + C-10 (AuthMiddleware) |
-| 犯罪マップ集計 | C-08 |
-| ingestion 実行エントリ | C-09 |
-| BFF 実行エントリ | C-10 |
-| CMS セットアップ | C-11 |
-| 通知配信 | C-12 |
-| ログ・メトリクス・トレース | C-13 |
+| MOFA XML 取得・パース | `safetyincident` / C-01 |
+| LLM 地名抽出 | `safetyincident` / C-02 |
+| Mapbox ジオコーディング ＋ セントロイドフォールバック | `safetyincident` / C-03 |
+| CMS への書き込み・読み取り | `safetyincident` / C-04（Port）+ C-05（素材） |
+| 新着検知による通知連携 | `safetyincident.EventPublisher` + `notification.NewArrivalConsumer`（Pub/Sub 経由） |
+| ID Token 認証 | `user.AuthVerifier`（C-07a）+ `interfaces/rpc.AuthInterceptor` |
+| 犯罪マップ集計 | `safetyincident/crimemap` / C-08 |
+| ingestion 実行エントリ | `cmd/ingestion` → `interfaces/job` → `safetyincident.application.IngestUseCase` |
+| BFF 実行エントリ | `cmd/bff` → `interfaces/rpc` |
+| CMS セットアップ | `cmd/setup` → `interfaces/job` → `cmssetup.application.EnsureSchemaUseCase` |
+| 通知配信 | `cmd/notifier` → `interfaces/job` → `notification.application.DispatchOnNewArrivalUseCase` |
+| ログ・メトリクス・トレース | `platform/observability` / C-13 |
 | Flutter 画面・状態管理 | C-20 / C-21 / C-22 / C-23 |

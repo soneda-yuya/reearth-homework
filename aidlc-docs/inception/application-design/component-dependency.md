@@ -13,34 +13,55 @@ graph LR
         PS["Cloud Pub/Sub"]
     end
 
-    subgraph GoRepo["Go サーバーモノレポ (reearth-homework)"]
-        subgraph Ingestion["cmd/ingestion"]
-            IApp["IngestionApp"]
-            IS["IngestionService"]
-        end
-        subgraph BFF["cmd/bff"]
-            BApp["BffApp"]
-            BS["BffApiService<br/>(Connect server)"]
-        end
-        subgraph Notifier["cmd/notifier"]
-            NApp["NotifierApp"]
-            NS["NotifierService"]
-        end
-        subgraph Setup["cmd/setup"]
-            SApp["SetupApp"]
-            SS["CmsSetupService"]
+    subgraph GoRepo["Go サーバーモノレポ (reearth-homework) — DDD"]
+        subgraph CmdLayer["cmd/* (Composition Roots)"]
+            CI["cmd/ingestion"]
+            CB["cmd/bff"]
+            CN["cmd/notifier"]
+            CS["cmd/setup"]
         end
 
-        subgraph Internal["internal/*"]
-            MC["mofa.Client"]
-            LE["llm.LocationExtractor"]
-            GC["geocode.Geocoder<br/>(Chain: Mapbox+Centroid)"]
-            REPO["SafetyIncidentRepository"]
-            CMSC["cms.Client"]
-            PUBSUB["pubsub.Publisher/Subscriber"]
-            FBG["firebase.*<br/>(Auth/UserStore/FcmSender)"]
-            CMA["crimemap.Aggregator"]
-            OBS["observability"]
+        subgraph Interfaces["internal/interfaces"]
+            RPC["interfaces/rpc<br/>(Connect Handlers +<br/>AuthInterceptor)"]
+            JOB["interfaces/job<br/>(Ingestion/Notifier/Setup Runner)"]
+        end
+
+        subgraph SafetyCtx["Context: safetyincident (Core)"]
+            SI_APP["application<br/>(Ingest/List/Get/Search/Nearby UseCase)"]
+            SI_DOM["domain<br/>(SafetyIncident Aggregate, Ports:<br/>MofaSource/LocationExtractor/Geocoder/Repository/EventPublisher)"]
+            SI_INF["infrastructure<br/>(mofa/cms/llm/geocode/eventbus adapters)"]
+            subgraph CrimeSub["Subdomain: crimemap"]
+                CM_APP["application<br/>(Choropleth/Heatmap UseCase)"]
+                CM_DOM["domain<br/>(Aggregator, InfoTypePolicy)"]
+                CM_INF["infrastructure<br/>(RepositoryAggregator)"]
+            end
+        end
+
+        subgraph UserCtx["Context: user (Supporting)"]
+            U_APP["application"]
+            U_DOM["domain<br/>(UserProfile, AuthVerifier, ProfileRepository)"]
+            U_INF["infrastructure<br/>(firebaseauth, firestore)"]
+        end
+
+        subgraph NotifCtx["Context: notification (Supporting)"]
+            N_APP["application<br/>(DispatchOnNewArrival)"]
+            N_DOM["domain<br/>(DispatchPolicy, SubscriberStore,<br/>PushSender, NewArrivalConsumer)"]
+            N_INF["infrastructure<br/>(firestore, fcm, eventbus)"]
+        end
+
+        subgraph SetupCtx["Context: cmssetup (Supporting)"]
+            CS_APP["application"]
+            CS_DOM["domain<br/>(SchemaDefinition)"]
+            CS_INF["infrastructure/cms"]
+        end
+
+        subgraph Platform["internal/platform/*"]
+            OBS["observability<br/>(slog + OTel)"]
+            CMSX["cmsx<br/>(HTTP client)"]
+            FBX["firebasex<br/>(SDK factory)"]
+            PSX["pubsubx"]
+            MBX["mapboxx"]
+            CFG["config"]
         end
     end
 
@@ -60,56 +81,83 @@ graph LR
         Core["core<br/>(Providers / Router / Theme)"]
     end
 
-    MOFA --> MC
-    MC --> IS
-    IS --> LE
-    IS --> GC
-    IS --> REPO
-    IS --> PUBSUB
-    LE --> Claude
-    GC --> Mapbox
-    REPO --> CMSC
-    CMSC --> CMS
-    PUBSUB --> PS
+    %% External dependencies
+    MOFA --> SI_INF
+    SI_INF --> Claude
+    SI_INF --> Mapbox
+    SI_INF --> CMSX
+    CMSX --> CMS
+    SI_INF --> PSX
+    PSX --> PS
+    PS --> N_INF
+    N_INF --> FBX
+    FBX --> FB
+    U_INF --> FBX
+    CS_INF --> CMSX
 
-    PS --> PUBSUB
-    PUBSUB --> NS
-    NS --> FBG
-    FBG --> FB
+    %% Interfaces layer --> Application layer (multi-context orchestration allowed here only)
+    CI --> JOB
+    CB --> RPC
+    CN --> JOB
+    CS --> JOB
+    JOB --> SI_APP
+    JOB --> N_APP
+    JOB --> CS_APP
+    RPC --> SI_APP
+    RPC --> CM_APP
+    RPC --> U_APP
+    RPC --> U_DOM
 
-    BS --> REPO
-    BS --> CMA
-    BS --> FBG
-    CMA --> REPO
+    %% Within a Context: application depends on domain
+    SI_APP --> SI_DOM
+    CM_APP --> CM_DOM
+    U_APP --> U_DOM
+    N_APP --> N_DOM
+    CS_APP --> CS_DOM
 
-    SS --> CMSC
+    %% Infrastructure implements domain ports
+    SI_INF -.implements.-> SI_DOM
+    CM_INF -.implements.-> CM_DOM
+    U_INF -.implements.-> U_DOM
+    N_INF -.implements.-> N_DOM
+    CS_INF -.implements.-> CS_DOM
 
-    IApp --> IS
-    BApp --> BS
-    NApp --> NS
-    SApp --> SS
+    %% CrimeMap subdomain consumes SafetyIncident Repository
+    CM_INF --> SI_DOM
 
+    %% Observability is horizontal
+    SI_INF --> OBS
+    SI_APP --> OBS
+    N_INF --> OBS
+    N_APP --> OBS
+    U_INF --> OBS
+    RPC --> OBS
+    JOB --> OBS
+
+    %% Flutter side
     Views --> VMS
     VMS --> UC
     UC --> RepoI
     RepoImpl -.implements.-> RepoI
     RepoImpl --> DS
-    DS --> BS
+    DS --> RPC
     DS --> FB
-
     Core --> Views
     Core --> DS
 
-    IS --> OBS
-    BS --> OBS
-    NS --> OBS
-    SS --> OBS
-
     classDef ext fill:#FFE0B2,stroke:#E65100,color:#000
-    classDef srv fill:#C8E6C9,stroke:#1B5E20,color:#000
+    classDef dom fill:#C8E6C9,stroke:#1B5E20,color:#000
+    classDef app fill:#FFF59D,stroke:#827717,color:#000
+    classDef inf fill:#FFCCBC,stroke:#BF360C,color:#000
+    classDef iface fill:#D1C4E9,stroke:#311B92,color:#000
+    classDef plat fill:#B3E5FC,stroke:#01579B,color:#000
     classDef flt fill:#BBDEFB,stroke:#0D47A1,color:#000
     class MOFA,Claude,Mapbox,CMS,FB,PS ext
-    class IApp,IS,BApp,BS,NApp,NS,SApp,SS,MC,LE,GC,REPO,CMSC,PUBSUB,FBG,CMA,OBS srv
+    class SI_DOM,CM_DOM,U_DOM,N_DOM,CS_DOM dom
+    class SI_APP,CM_APP,U_APP,N_APP,CS_APP app
+    class SI_INF,CM_INF,U_INF,N_INF,CS_INF inf
+    class RPC,JOB,CI,CB,CN,CS iface
+    class OBS,CMSX,FBX,PSX,MBX,CFG plat
     class VMS,Views,UC,RepoI,RepoImpl,DS,Core flt
 ```
 
@@ -119,22 +167,50 @@ graph LR
 
 行の要素 → 列の要素 に依存する、を示す。
 
-| From \ To | MofaClient | LLM Extractor | Geocoder | Repository | CMS Client | Pub/Sub | Firebase | CrimeMap Agg | Observability |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| IngestionService | ✓ | ✓ | ✓ | ✓ | — | ✓ | — | — | ✓ |
-| NotifierService | — | — | — | — | — | ✓ | ✓ | — | ✓ |
-| BffApiService | — | — | — | ✓ | — | — | ✓ (Auth + UserStore) | ✓ | ✓ |
-| CmsSetupService | — | — | — | — | ✓ | — | — | — | ✓ |
-| Repository (CMSImpl) | — | — | — | — | ✓ | — | — | — | ✓ |
-| CrimeMap Aggregator | — | — | — | ✓ | — | — | — | — | ✓ |
+各列は **Port（domain I/F）** で、行は **UseCase / Adapter / Interface レイヤ**。依存は `application → domain` が基本で、`infrastructure` は他 Context の domain を参照しない（Composition Root で組まれる）。
 
-**内部パッケージの依存ルール**:
-- `internal/domain` は他の `internal/*` に依存しない（純粋ドメイン）
-- `internal/repository` → `internal/domain`, `internal/cms`（Impl のみ）
-- `internal/bff` → `internal/repository`, `internal/firebase`, `internal/crimemap`, `internal/observability`, Connect generated code
-- `internal/ingestion` → `internal/mofa`, `internal/llm`, `internal/geocode`, `internal/repository`, `internal/pubsub`, `internal/observability`
-- `internal/notifier` → `internal/pubsub`, `internal/firebase`, `internal/observability`（必要に応じ `internal/repository` で title 補完）
-- `cmd/*` はそれぞれのサービスと `internal/observability` だけを import（薄い main）
+| From \ To (Port) | MofaSource | LocationExtractor | Geocoder | SI.Repository | EventPublisher | SubscriberStore | PushSender | AuthVerifier | ProfileRepository | cmsx.Client | crimemap.Aggregator | observability |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `safetyincidentapp.IngestUseCase` | ✓ | ✓ | ✓ | ✓ | ✓ | — | — | — | — | — | — | ✓ |
+| `safetyincidentapp.{List,Get,Search,Nearby}UseCase` | — | — | — | ✓ | — | — | — | — | — | — | — | ✓ |
+| `crimemapapp.{Choropleth,Heatmap}UseCase` | — | — | — | — | — | — | — | — | — | — | ✓ | ✓ |
+| `notificationapp.DispatchOnNewArrivalUseCase` | — | — | — | — | — | ✓ | ✓ | — | — | — | — | ✓ |
+| `userapp.*` | — | — | — | — | — | — | — | — | ✓ | — | — | ✓ |
+| `cmssetupapp.EnsureSchemaUseCase` | — | — | — | — | — | — | — | — | — | ✓ (Adapter 経由) | — | ✓ |
+| `interfaces/rpc.AuthInterceptor` | — | — | — | — | — | — | — | ✓ | — | — | — | ✓ |
+| `interfaces/rpc.*Handler` | — | — | — | — | — | — | — | — | — | — | — | ✓ |
+| `safetyincident.infrastructure.cms.Repository` (Adapter) | — | — | — | — | — | — | — | — | — | ✓ | — | ✓ |
+| `crimemap.infrastructure.RepositoryAggregator` (Adapter) | — | — | — | ✓ | — | — | — | — | — | — | — | ✓ |
+
+**DDD レイヤ依存ルール**（Bounded Context 内）:
+- `{context}/domain` は他のどこにも依存しない（標準ライブラリ + `time` + `errors` のみ）
+- `{context}/application` → ✅ 同 Context の `domain` のみ
+- `{context}/infrastructure/*` → ✅ 同 Context の `domain`（Port 実装）、`platform/*`、`shared/*`、generated proto
+- `interfaces/rpc` → ✅ 複数 Context の `application`、`shared/*`、generated proto
+- `interfaces/job` → ✅ 同一 UseCase グループの `application`、`shared/*`
+- `platform/*` → ✅ `shared/*` のみ（ドメイン知識なし）
+- `shared/*` → ❌ 他 `internal/*` 依存禁止
+- `cmd/*`（Composition Root）→ ✅ 全方向 import 可（DI ワイヤリングのため）
+
+**Context 間の結合ルール**:
+- Context A の `application` / `infrastructure` が Context B の `domain` / `application` / `infrastructure` を **直接 import 禁止**
+- 結合の許可チャネル:
+  1. `interfaces/rpc` での Application Service オーケストレーション（BFF のみ、複数 Context を横断可）
+  2. Domain Event を proto 化して Pub/Sub で受け渡し（`safetyincident.NewArrivalEvent` → `notification.NewArrivalMessage`）
+  3. Composition Root（`cmd/*`）での DI 配線
+- **例外（実用上の妥協）**: `user.domain` が `safetyincident.CountryCode` / `InfoType` を値オブジェクトとして参照する点のみ許可。これらは MOFA 由来の識別子コードで実質アプリ全体の共有語彙のため（Shared Kernel 相当、将来 `shared/codes` へ独立化する選択肢あり）。
+
+**Context 別パッケージ一覧**（Go パッケージと配置先）:
+| Context | domain | application | infrastructure |
+|---|---|---|---|
+| `safetyincident` | `internal/safetyincident/domain` → package `safetyincident` | `internal/safetyincident/application` → package `safetyincidentapp` | `internal/safetyincident/infrastructure/{mofa,cms,llm,geocode,eventbus}` |
+| `safetyincident/crimemap` | `internal/safetyincident/crimemap/domain` → package `crimemap` | `internal/safetyincident/crimemap/application` → package `crimemapapp` | `internal/safetyincident/crimemap/infrastructure` → package `crimemapinfra` |
+| `user` | `internal/user/domain` → package `user` | `internal/user/application` → package `userapp` | `internal/user/infrastructure/{firebaseauth,firestore}` |
+| `notification` | `internal/notification/domain` → package `notification` | `internal/notification/application` → package `notificationapp` | `internal/notification/infrastructure/{firestore,fcm,eventbus}` |
+| `cmssetup` | `internal/cmssetup/domain` → package `cmssetup` | `internal/cmssetup/application` → package `cmssetupapp` | `internal/cmssetup/infrastructure/cms` → package `cmsapplier` |
+| Interface | — | — | `internal/interfaces/{rpc,job}` |
+| Platform | — | — | `internal/platform/{config,observability,connectserver,pubsubx,cmsx,firebasex,mapboxx}` |
+| Shared | — | — | `internal/shared/{errs,clock}` |
 
 ---
 

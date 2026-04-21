@@ -87,39 +87,184 @@ ListSafetyIncidents / GetSafetyIncidentDetail / ListNearby / SearchSafetyInciden
 
 ## 6. リポジトリとディレクトリ構造（予定）
 
-### 本リポジトリ（`reearth-homework`）: Go サーバーモノレポ
+### 本リポジトリ（`reearth-homework`）: Go サーバーモノレポ — **DDD（Bounded Context × Layered Architecture）**
+
+#### 設計原則
+- **Bounded Context を `internal/` 直下で分離**: それぞれに閉じた `domain` / `application` / `infrastructure` レイヤを持つ。
+- **Layered Architecture（依存は内向き）**: `domain` は他レイヤを知らない → `application` は `domain` のみ参照 → `infrastructure` は `domain` の Port（I/F）を実装し、`application` は依存性注入で受け取る。
+- **Interfaces（入口）レイヤは `internal/interfaces/`**: Connect ハンドラや Job ランナーなど、外部トリガーに対して Application Service を呼ぶだけの薄い層。
+- **Platform / Shared**: 技術基盤（Pub/Sub、HTTP サーバ、OTel、設定読み込み）は `internal/platform/`、純粋な共有ユーティリティは `internal/shared/`。
+- **cmd/\* は Composition Root**: DI ワイヤリングと main のみ。ビジネスロジックは置かない。
+- **循環依存禁止**: Bounded Context 間は **Port/Adapter + Domain Event** でのみ結合（例: `safetyincident.domain.NewArrivalEvent` を `notification.infrastructure.eventbus` が受け取る）。
+
+#### Bounded Context 一覧
+| Context | タイプ | 説明 |
+|---|---|---|
+| `safetyincident` | **Core** | MOFA 取り込み・LLM 抽出・ジオコード・CMS 永続化・読み取り / 検索。サブドメイン `crimemap` を内包。 |
+| `notification` | Supporting | 新着 Domain Event を受けて対象ユーザーへ FCM 配信。 |
+| `user` | Supporting | Firebase Auth 検証 + Firestore 上のユーザープロファイル（お気に入り・通知設定・FCM トークン）。 |
+| `cmssetup` | Supporting | reearth-cms の Project / Model / Field 冪等作成。 |
+
+#### ディレクトリ構造
 ```
 /
-├── cmd/
-│   ├── ingestion/         # C-09
-│   ├── bff/               # C-10
-│   ├── setup/             # C-11
-│   └── notifier/          # C-12
+├── cmd/                                  # Composition roots（DI + main のみ）
+│   ├── ingestion/main.go
+│   ├── bff/main.go
+│   ├── notifier/main.go
+│   └── setup/main.go
+│
 ├── internal/
-│   ├── domain/            # 純粋ドメイン型
-│   ├── mofa/              # C-01
-│   ├── llm/               # C-02
-│   ├── geocode/           # C-03
-│   ├── repository/        # C-04
-│   ├── cms/               # C-05
-│   ├── pubsub/            # C-06
-│   ├── firebase/          # C-07
-│   ├── crimemap/          # C-08
-│   ├── bff/               # BffApiService 本体
-│   ├── ingestion/         # IngestionService 本体
-│   ├── notifier/          # NotifierService 本体
-│   ├── setup/             # CmsSetupService 本体
-│   └── observability/     # C-13
+│   ├── safetyincident/                   # 🟩 Core Bounded Context
+│   │   ├── domain/                       # 純粋ドメイン（依存ゼロ）
+│   │   │   ├── safety_incident.go        # Aggregate Root
+│   │   │   ├── mail_item.go              # Entity（MOFA raw）
+│   │   │   ├── key_cd.go                 # VO
+│   │   │   ├── lat_lng.go                # VO
+│   │   │   ├── country_code.go           # VO
+│   │   │   ├── area_code.go              # VO
+│   │   │   ├── info_type.go              # VO
+│   │   │   ├── geocode_source.go         # VO (enum)
+│   │   │   ├── filter.go                 # List/Search 用の VO
+│   │   │   ├── repository.go             # Port: Repository I/F
+│   │   │   ├── mofa_source.go            # Port: MOFA 取得 I/F
+│   │   │   ├── location_extractor.go     # Port: LLM 抽出 I/F（Domain Service）
+│   │   │   ├── geocoder.go               # Port: ジオコーダ I/F（Domain Service）
+│   │   │   ├── event_publisher.go        # Port: Domain Event 発行 I/F
+│   │   │   └── events.go                 # NewArrivalEvent ほか
+│   │   ├── application/                  # ユースケース（Application Service）
+│   │   │   ├── ingest_usecase.go         # 取り込みオーケストレーション
+│   │   │   ├── list_usecase.go
+│   │   │   ├── get_usecase.go
+│   │   │   ├── search_usecase.go
+│   │   │   ├── nearby_usecase.go
+│   │   │   └── dto.go                    # Application DTO（proto と domain の翻訳）
+│   │   ├── crimemap/                     # 🟨 Subdomain（safetyincident 内部）
+│   │   │   ├── domain/
+│   │   │   │   ├── choropleth.go         # VO
+│   │   │   │   ├── heatmap_point.go      # VO
+│   │   │   │   ├── infotype_policy.go    # Policy: 何を「犯罪」とみなすか
+│   │   │   │   └── aggregator.go         # Domain Service I/F
+│   │   │   ├── application/
+│   │   │   │   ├── get_choropleth_usecase.go
+│   │   │   │   └── get_heatmap_usecase.go
+│   │   │   └── infrastructure/
+│   │   │       └── repository_aggregator.go  # safetyincident.Repository を使う実装
+│   │   └── infrastructure/               # Port の実装（Adapter）
+│   │       ├── mofa/
+│   │       │   ├── http_source.go        # MofaSource 実装
+│   │       │   └── parser.go
+│   │       ├── cms/
+│   │       │   ├── repository.go         # Repository 実装（reearth-cms Integration API）
+│   │       │   ├── client.go             # 低レベル HTTP クライアント
+│   │       │   └── dto.go                # CMS JSON ↔ domain マッピング
+│   │       ├── llm/
+│   │       │   └── claude_extractor.go   # LocationExtractor 実装
+│   │       ├── geocode/
+│   │       │   ├── mapbox.go             # Geocoder 実装（primary）
+│   │       │   ├── centroid.go           # Geocoder 実装（fallback）
+│   │       │   └── chain.go              # 合成（primary → fallback）
+│   │       └── eventbus/
+│   │           └── pubsub_publisher.go   # EventPublisher 実装（Pub/Sub）
+│   │
+│   ├── notification/                     # 🟦 Supporting Bounded Context
+│   │   ├── domain/
+│   │   │   ├── notification.go           # VO（Title/Body/Payload）
+│   │   │   ├── subscriber.go             # VO
+│   │   │   ├── dispatch_policy.go        # Domain Service: 誰に送るか
+│   │   │   ├── subscriber_store.go       # Port I/F
+│   │   │   ├── push_sender.go            # Port I/F
+│   │   │   └── new_arrival_consumer.go   # Port: 他コンテキストからの Event 受信 I/F
+│   │   ├── application/
+│   │   │   └── dispatch_usecase.go       # DispatchOnNewArrivalUseCase
+│   │   └── infrastructure/
+│   │       ├── firestore/
+│   │       │   └── subscriber_store.go   # SubscriberStore 実装
+│   │       ├── fcm/
+│   │       │   └── push_sender.go        # PushSender 実装
+│   │       └── eventbus/
+│   │           └── pubsub_consumer.go    # NewArrivalConsumer 実装（Pub/Sub 購読）
+│   │
+│   ├── user/                             # 🟦 Supporting Bounded Context
+│   │   ├── domain/
+│   │   │   ├── user_profile.go           # Aggregate
+│   │   │   ├── favorite_country.go       # VO
+│   │   │   ├── notification_pref.go      # Entity
+│   │   │   ├── fcm_token.go              # VO
+│   │   │   ├── verified_user.go          # VO（Auth から）
+│   │   │   ├── profile_repository.go     # Port I/F
+│   │   │   └── auth_verifier.go          # Port I/F
+│   │   ├── application/
+│   │   │   ├── get_profile_usecase.go
+│   │   │   ├── toggle_favorite_usecase.go
+│   │   │   ├── update_notification_pref_usecase.go
+│   │   │   └── register_fcm_token_usecase.go
+│   │   └── infrastructure/
+│   │       ├── firestore/
+│   │       │   └── profile_repository.go # ProfileRepository 実装
+│   │       └── firebaseauth/
+│   │           └── verifier.go           # AuthVerifier 実装
+│   │
+│   ├── cmssetup/                         # 🟦 Supporting Bounded Context
+│   │   ├── domain/
+│   │   │   └── schema_definition.go      # 安全情報 Model / Field の宣言的定義
+│   │   ├── application/
+│   │   │   └── ensure_schema_usecase.go  # 冪等適用
+│   │   └── infrastructure/
+│   │       └── cms/
+│   │           └── schema_applier.go     # reearth-cms Integration API 経由
+│   │
+│   ├── interfaces/                       # 🎯 入口レイヤ（薄いアダプター）
+│   │   ├── rpc/                          # Connect RPC ハンドラ
+│   │   │   ├── safetyincident_handler.go # safetyincident.application を呼ぶ
+│   │   │   ├── crimemap_handler.go       # safetyincident/crimemap.application を呼ぶ
+│   │   │   ├── usersetting_handler.go    # user.application を呼ぶ
+│   │   │   ├── auth_interceptor.go       # user.AuthVerifier を使う Interceptor
+│   │   │   └── server.go                 # Connect mux 組み立て
+│   │   └── job/                          # スケジューラ／CLI 起動
+│   │       ├── ingestion_runner.go
+│   │       ├── notifier_runner.go
+│   │       └── setup_runner.go
+│   │
+│   ├── shared/                           # Shared Kernel
+│   │   ├── errs/                         # errors.Is/As ヘルパ、%w ラップ規約
+│   │   └── clock/                        # time 抽象（テスト容易性）
+│   │
+│   └── platform/                         # 技術基盤（Adapter 供給側の素材）
+│       ├── config/                       # 環境変数読み込み
+│       ├── observability/                # slog + OTel セットアップ
+│       ├── connectserver/                # HTTP サーバ + Connect 組み立て
+│       ├── pubsubx/                      # Pub/Sub クライアント factory
+│       ├── cmsx/                         # reearth-cms HTTP クライアント（adapter 用の素材）
+│       ├── firebasex/                    # Firebase SDK factory（Auth/Firestore/FCM）
+│       └── mapboxx/                      # Mapbox SDK factory
+│
 ├── proto/
 │   └── v1/
-│       ├── safetymap.proto      # Connect サービス
-│       └── pubsub.proto          # Pub/Sub メッセージ
-├── gen/go/v1/              # buf generate 出力（Go）
+│       ├── safetymap.proto               # Connect サービス
+│       └── pubsub.proto                  # Domain Event メッセージ
+├── gen/go/v1/                            # buf generate 出力
 ├── buf.yaml / buf.gen.yaml
 ├── go.mod
-├── tools.go                # buf, connect-go, etc の tools
-└── aidlc-docs/             # AI-DLC ドキュメント（既存）
+├── tools.go                              # buf, connect-go, etc
+└── aidlc-docs/                           # AI-DLC ドキュメント（既存）
 ```
+
+#### レイヤ依存ルール（Go 側）
+- `domain` → ❌ 他レイヤ / 他 Context / `platform` / `shared` いずれにも **依存しない**（`time`・標準ライブラリ・`errors` のみ）
+- `application` → ✅ 同 Context の `domain` のみ
+- `infrastructure` → ✅ 同 Context の `domain`（Port 実装）と `platform` / `shared` / 必要に応じて generated proto
+- `interfaces/rpc` → ✅ 複数 Context の `application`、`shared`、generated proto
+- `interfaces/job` → ✅ 同 Context の `application`、`shared`
+- `platform` → ✅ `shared` のみ（ドメイン非依存）
+- `shared` → ❌ 他 `internal/*` 依存なし
+
+#### Context 間結合ルール（Bounded Context の尊重）
+- **禁止**: Context A の `application` / `infrastructure` が Context B の `domain` / `application` / `infrastructure` を直接 import すること
+- **許可**:
+  - `interfaces/rpc` が複数 Context の `application` を組み合わせる（オーケストレーション）
+  - Domain Event を **proto 定義** に変換して Pub/Sub 経由で連携（`safetyincident.NewArrivalEvent` → `notification.NewArrivalConsumer`）
+  - `cmd/*` の Composition Root が DI の際に全 Context の型を触るのは OK（本来の責務）
 
 ### 別リポジトリ（`overseas-safety-map-app`、新規作成予定）: Flutter アプリ
 ```

@@ -360,3 +360,26 @@ Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響す
 **Context**: 5 成果物レビュー待ち。承認後に Units Planning へ進む。
 
 ---
+
+## Backend Restructure to DDD
+
+**Timestamp**: 2026-04-21T10:15:00Z
+**User Input**: "6. リポジトリとディレクトリ構造をdddにして欲しいです" → "バックエンド側です"
+**AI Actions**:
+1. Application Design §6 の Go バックエンド部分を **DDD（Bounded Context × Layered Architecture）** に刷新。
+2. Bounded Context を4つに分離: `safetyincident` (Core)、`notification`、`user`、`cmssetup` (Supporting)。
+3. 各 Context に `domain` / `application` / `infrastructure` の3レイヤを採用。`crimemap` は `safetyincident` の Subdomain として内包。
+4. 入口レイヤ `internal/interfaces/{rpc,job}` を新設（Connect ハンドラと Job ランナー）。
+5. 横断基盤 `internal/platform/*`（observability, cmsx, firebasex, pubsubx, mapboxx, config, connectserver）と `internal/shared/*`（errs, clock）を明確に分離。
+6. `cmd/*` は Composition Root のみの薄い main に限定。
+7. レイヤ依存ルール（domain→他に依存しない / application→domain のみ / infra→domain+platform/shared）と Context 間結合ルール（直接 import 禁止、Pub/Sub 経由 Domain Event または interfaces/rpc で結合）を明文化。
+8. 付随成果物を更新:
+   - `components.md`: コンポーネントを Context 別に再編成、Port/Adapter 区別を明記
+   - `component-methods.md`: 全 Go コード例を DDD パッケージに置き換え、各 Context の domain/application/infrastructure を網羅
+   - `services.md`: S-01〜S-04 を Application Service（UseCase）形式に書き直し、シーケンス図の呼び出しチェーンを DDD レイヤ表記に更新
+   - `component-dependency.md`: Mermaid 全体依存図を Context ごとのサブグラフに再構成、依存マトリクスを Port × UseCase の対応に更新、DDD レイヤ依存ルールに書き直し
+9. Flutter 側は変更なし（要求範囲外）。
+
+**Context**: PR #3 のブランチに追加 commit してプッシュする予定。
+
+---
