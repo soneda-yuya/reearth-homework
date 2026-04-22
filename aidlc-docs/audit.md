@@ -492,3 +492,35 @@ Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響す
 **Context**: 成果物2点レビュー待ち。承認後に U-PLT NFR Design へ進む。
 
 ---
+
+## U-PLT NFR Requirements Approved + NFR Design Start
+
+**Timestamp**: 2026-04-22T12:15:00Z
+**User Input**: "マージしてください"
+**AI Actions**:
+1. PR #6 を squash マージ（commit `4188189`）。
+2. aidlc-state.md を「U-PLT NFR Requirements 承認済み」「U-PLT NFR Design 進行中」に更新。
+3. `aidlc-docs/construction/plans/U-PLT-nfr-design-plan.md` を 5 件の計画質問付きで生成（Panic/Graceful shutdown / Retry+Backoff / Health check / Rate limit / SDK ライフサイクル）。
+
+**Context**: U-PLT NFR Design 計画質問の回答待ち。
+
+---
+
+## U-PLT NFR Design Answered + Artifacts Generated + Compression Policy
+
+**Timestamp**: 2026-04-22T12:35:00Z
+**User Input**: "Bで。 回答もしました"
+**User Answers**: Q1 [A] / Q2 [A] / Q3 [A] / Q4 [A] / Q5 [A]（すべて推奨）
+
+**Workflow Compression Decision (Option B)**:
+ユーザーが提案した圧縮オプションの **B「U-CSS 以降は Functional Design / NFR Requirements / NFR Design を Minimal 合本版 1 ドキュメントにまとめる」** を採用。U-PLT で共通規約を確定したため、後続 Unit では固有事項のみ簡潔に記述する方針。Infrastructure Design / Code Generation / Build & Test は従来どおり独立。
+
+**AI Actions**:
+1. `construction/U-PLT/nfr-design/nfr-design-patterns.md` を生成。10 パターン（Panic Recovery / Graceful Shutdown / Retry+Backoff / 2-tier Health Check / Token Bucket Rate Limit / Per-process Singleton / Secret Resolver / PII Redaction / Structured Log / OTel Trace Propagation）を定義。Retry ポリシーマトリクス・Rate Limit デフォルト値表も記載。
+2. `construction/U-PLT/nfr-design/logical-components.md` を生成。14 の論理コンポーネント（LC-01〜LC-14）を配置先パッケージ・責務・インターフェイス・依存関係（Mermaid）で定義。U-PLT Code Generation 時の実装順序と、他 Unit への引き継ぎ事項を明記。
+3. aidlc-state.md に「ワークフロー圧縮方針」節を追加。U-CSS 以降は Minimal 合本版で進める旨を記録。
+4. aidlc-state.md を「U-PLT NFR Design 承認待ち」に更新。
+
+**Context**: 成果物 2 点レビュー待ち。承認後に U-PLT Infrastructure Design へ進む。その後の U-CSS〜U-APP は合本版で進める。
+
+---
