@@ -676,3 +676,30 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: U-CSS 計画質問の回答待ち。回答後に `U-CSS-design.md`（合本版）を生成する。
 
 ---
+
+## U-CSS Plan Answered (All A) + Design Generated
+
+**Timestamp**: 2026-04-22T19:15:00Z
+**User Input**: "マージしました。また解答も自分で回答しましたが、全てAです"（PR #20 rename merge + U-CSS 計画 Q1–Q6 全 A 回答）
+**AI Actions**:
+1. main を pull し PR #20（`1d04fc0` setup→cmsmigrate rename）を取り込み。
+2. `plans/U-CSS-design-plan.md` の Q1–Q6 に `[A]: A` を記入、「承認前の最終確認」セクションを Q&A 要旨で埋めた。
+3. Feature branch `feature/u-css-design` を切り、`construction/U-CSS/design/U-CSS-design.md`（Minimal 合本版）を生成:
+   - **Functional Design**: `cmsmigrate` BC、Domain VO（`SchemaDefinition` / `ProjectDefinition` / `ModelDefinition` / `FieldDefinition` + `FieldType` enum）、不変条件 R1–R7、`SafetyIncident` 19 フィールド表（proto と整合）、`EnsureSchemaUseCase` と `SchemaApplier` Port、`CMSSchemaApplier` Adapter、Composition Root 雛形、初回 / 再実行 / 追加時の Sequence
+   - **NFR Requirements（U-CSS 固有）**: NFR-CSS-PERF-01/02（< 60s 初回 / < 10s 再実行）、NFR-CSS-SEC-01/02/03（Secret Manager、Token redact、最小権限 SA）、NFR-CSS-REL-01/02/03（冪等、再実行復旧、retry）、NFR-CSS-OPS-01/02/03/04（slog 属性、OTel metric、ランブック、drift 運用）、NFR-CSS-TEST-01–04、NFR-CSS-EXT-01/02
+   - **NFR Design Patterns**: Idempotent CREATE / Fail-Fast / SchemaDefinition-as-Code / Drift 警告 / Port-Adapter（Hexagonal）
+   - **運用ランブック**（初回実行 / 失敗リカバリ / Drift 対応）+ **トレーサビリティ表**（REQ/NFR → U-CSS）
+4. 「計画では 18 フィールドと表記、実体は 19（`lead` を含む）」の差分を design 本体で明示訂正。
+5. aidlc-state.md を「U-CSS 合本版 生成済み / PR レビュー待ち」に更新。
+
+**Decisions frozen**:
+- SchemaDefinition = Project + Model + 19 Field のフル宣言（Q1 A）
+- 冪等 CREATE、drift は warning のみ（Q2 A）
+- 手動実行（`gcloud run jobs execute cms-migrate`）、CI/CD 自動起動なし（Q3 A）
+- fail-fast、既作成は次回補完（Q4 A）
+- Unit + PBT + `SchemaApplier` mock、統合テストは Build & Test で手動（Q5 A）
+- Go コードで `SafetyMapSchema()` をべた書き、PR + Job 再実行で反映（Q6 A）
+
+**Context**: PR を作成してレビュー依頼。承認後に U-CSS Infrastructure Design へ進む。
+
+---
