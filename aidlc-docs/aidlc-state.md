@@ -5,7 +5,7 @@
 - **プロジェクトタイプ**: グリーンフィールド
 - **開始日**: 2026-04-20T17:55:00Z（アイデア変更のリセット）
 - **現在のフェーズ**: CONSTRUCTION
-- **現在のステージ**: U-PLT（Platform & Proto 基盤）／ Infrastructure Design — 成果物 3 点生成済み、承認待ち
+- **現在のステージ**: U-PLT（Platform & Proto 基盤）／ Code Generation（Planning）— プラン作成、承認待ち
 
 ## ワークフロー圧縮方針（2026-04-22 採用）
 **U-CSS 以降の Unit は Functional Design / NFR Requirements / NFR Design を「Minimal 合本版」1 ドキュメントにまとめる**。U-PLT で共通規約を確定したため、各 Unit 固有の内容のみを簡潔に記述する。Infrastructure Design / Code Generation / Build & Test は従来どおり独立して実施する。
@@ -54,8 +54,8 @@
 - [x] 機能設計（Functional Design — Minimal 版、承認済み・PR #5 merged）
 - [x] NFR 要件（NFR Requirements — Go 1.26 採用、承認済み・PR #6 merged）
 - [x] NFR 設計（NFR Design — 承認済み・PR #7 merged）
-- [x] インフラ設計（Infrastructure Design — 単一 prod プロジェクト + Terraform で Cloud Run 含む全リソース管理、承認待ち）
-- [ ] コード生成（Code Generation）
+- [x] インフラ設計（Infrastructure Design — 単一 prod プロジェクト + Terraform で Cloud Run 含む全リソース管理、承認済み・PR #8 merged）
+- [ ] コード生成（Code Generation — Planning 中、プラン承認待ち）
 - [ ] ビルドとテスト（Build and Test）
 
 #### U-CSS / U-ING / U-BFF / U-NTF / U-APP

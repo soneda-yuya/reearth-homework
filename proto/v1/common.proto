@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package overseasmap.v1;
+
+option go_package = "github.com/soneda-yuya/reearth-homework/gen/go/v1;overseasmapv1";
+
+// Point is a WGS84 coordinate.
+message Point {
+  double lat = 1;
+  double lng = 2;
+}
+
+// GeocodeSource records how the Point was derived.
+enum GeocodeSource {
+  GEOCODE_SOURCE_UNSPECIFIED = 0;
+  GEOCODE_SOURCE_MAPBOX = 1;
+  GEOCODE_SOURCE_COUNTRY_CENTROID = 2;
+}
