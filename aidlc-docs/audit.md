@@ -725,3 +725,37 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成して計画レビュー。回答後に Infrastructure Design 本編を生成する。
 
 ---
+
+## U-CSS Infra Plan Answered + Design Generated
+
+**Timestamp**: 2026-04-22T20:45:00Z
+**User Input**: "大丈夫です"（全 6 問 [A]: A で確定、PR #22 マージ、Infrastructure Design 本編生成依頼）
+**AI Actions**:
+1. plan ファイルに全 6 問 `[A]: A` を記入、最終確認欄を Q&A 要旨で埋めた。
+2. PR #22 を squash マージ（commit `9d9560a`）。
+3. Feature branch `feature/u-css-infra-design` を切って以下を生成:
+   - `construction/U-CSS/infrastructure-design/deployment-architecture.md`
+     - Component Overview（Cloud Run Job + Secret Manager + 外部 reearth-cms）
+     - Q1-Q6 決定事項の一覧
+     - Cloud Run Job 仕様（max_retries=0 を追加することを明示）
+     - IAM / Secret / ネットワークの最小権限モデル
+     - 可観測性（slog 属性、OTel Metric 定義、Trace Span）
+     - 運用手順（初回 / スキーマ変更 / 失敗時 / Token rotation）
+     - 非スコープ（CMS 本体 / Alerting / VPC / Multi-Region）
+     - トレーサビリティ（NFR → Infra）
+   - `construction/U-CSS/infrastructure-design/terraform-plan.md`
+     - 変更サマリ（main.tf に `max_retries = 0` 追加 / variables.tf に description / prod.tfvars.example 新規）
+     - 詳細 diff（疑似）
+     - `terraform apply` 想定出力（`Plan: 0 to add, 1 to change, 0 to destroy`）
+     - Code Generation へ渡す TODO 一覧
+     - 非 Terraform セットアップ手順（運用ランブック）
+
+**Key Infra Decisions**:
+- `max_retries = 0` を新規明示（U-PLT 雛形では未指定）
+- Secret は `version = "latest"` 追従で手動 rotation 手順（Terraform 変更不要）
+- reearth-cms は **外部既存** を前提（Q5 A）、CMS 本体は本 Terraform 範囲外
+- Alerting Policy は MVP では作成しない、Cloud Logging 目視運用
+
+**Context**: PR を作成してレビュー依頼。承認後に U-CSS Code Generation へ進む。
+
+---

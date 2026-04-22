@@ -5,7 +5,7 @@
 - **プロジェクトタイプ**: グリーンフィールド
 - **開始日**: 2026-04-20T17:55:00Z（アイデア変更のリセット）
 - **現在のフェーズ**: CONSTRUCTION
-- **現在のステージ**: U-CSS（CMS Migrate Unit）／ Infrastructure Design — 計画質問作成、回答待ち
+- **現在のステージ**: U-CSS（CMS Migrate Unit）／ Infrastructure Design — 本編生成済み、PR レビュー待ち
 
 ## ワークフロー圧縮方針（2026-04-22 採用）
 **U-CSS 以降の Unit は Functional Design / NFR Requirements / NFR Design を「Minimal 合本版」1 ドキュメントにまとめる**。U-PLT で共通規約を確定したため、各 Unit 固有の内容のみを簡潔に記述する。Infrastructure Design / Code Generation / Build & Test は従来どおり独立して実施する。
@@ -60,7 +60,8 @@
 
 #### U-CSS（進行中、Sprint 1）
 - [x] Minimal 合本版（Functional + NFR Req + NFR Design）— PR #21 merged 2026-04-22
-- [ ] インフラ設計（Infrastructure Design）— 計画質問作成、回答待ち（Q1-Q6）
+- [x] インフラ設計 計画（PR #22 merged、Q1-Q6 全 A）
+- [ ] インフラ設計（Infrastructure Design）— 本編生成済み、PR レビュー待ち
 - [ ] コード生成（Code Generation）
 - [ ] ビルドとテスト（Build and Test）
 
