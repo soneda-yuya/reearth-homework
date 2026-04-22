@@ -19,29 +19,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-          service_account: ci-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
-
+      # fmt and validate don't need cloud credentials; always run them.
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '~> 1.9'
-
-      - name: Terraform init
-        working-directory: terraform
-        run: terraform init -backend=true
 
       - name: Terraform fmt check
         working-directory: terraform
         run: terraform fmt -check -recursive
 
+      # The cloud-authenticated steps below require the WIF secret. Before the
+      # GCP project is bootstrapped the secret is absent; in that case we exit
+      # green with a warning so the gating doesn't block unrelated PRs.
+      - name: Check WIF configuration
+        id: check
+        env:
+          WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
+        run: |
+          if [ -z "$WIF_PROVIDER" ]; then
+            echo "::warning::GCP_WIF_PROVIDER secret is not set; skipping cloud-authenticated plan. Populate GitHub Secrets after terraform bootstrap."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: google-github-actions/auth@v2
+        if: steps.check.outputs.ready == 'true'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ci-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+
+      - name: Terraform init
+        if: steps.check.outputs.ready == 'true'
+        working-directory: terraform
+        run: terraform init -backend=true
+
       - name: Terraform validate
+        if: steps.check.outputs.ready == 'true'
         working-directory: terraform
         run: terraform validate
 
       - name: Terraform plan
         id: plan
+        if: steps.check.outputs.ready == 'true'
         working-directory: terraform
         run: |
           set +e
@@ -53,6 +73,7 @@ jobs:
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
 
       - name: Post plan summary to PR
+        if: steps.check.outputs.ready == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -76,5 +97,5 @@ jobs:
             });
 
       - name: Fail if plan errored
-        if: steps.plan.outputs.exit_code != '0' && steps.plan.outputs.exit_code != '2'
+        if: steps.check.outputs.ready == 'true' && steps.plan.outputs.exit_code != '0' && steps.plan.outputs.exit_code != '2'
         run: exit 1

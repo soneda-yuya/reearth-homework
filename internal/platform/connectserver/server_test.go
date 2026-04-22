@@ -18,8 +18,8 @@ type fakeProber struct {
 	err  error
 }
 
-func (f fakeProber) Name() string                        { return f.name }
-func (f fakeProber) Probe(ctx context.Context) error     { return f.err }
+func (f fakeProber) Name() string                    { return f.name }
+func (f fakeProber) Probe(ctx context.Context) error { return f.err }
 
 func TestHealthz_AlwaysOK(t *testing.T) {
 	rr := httptest.NewRecorder()
@@ -72,6 +72,8 @@ func readAll(t *testing.T, r interface{ Read([]byte) (int, error) }) []byte {
 	return b
 }
 
-type anyReader struct{ r interface{ Read([]byte) (int, error) } }
+type anyReader struct {
+	r interface{ Read([]byte) (int, error) }
+}
 
 func (a anyReader) Read(p []byte) (int, error) { return a.r.Read(p) }
