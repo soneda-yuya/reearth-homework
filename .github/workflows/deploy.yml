@@ -1,0 +1,106 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write  # required for Workload Identity Federation
+
+# Serialise deploys per environment so consecutive main pushes never race on
+# the terraform state lock or push overlapping image tags. We queue (rather
+# than cancel) so every successful merge still produces a deploy.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  PROJECT_ID: overseas-safety-map
+  REGION: asia-northeast1
+  REGISTRY: asia-northeast1-docker.pkg.dev
+  REGISTRY_REPO: app
+
+jobs:
+  # SHA is derived once so every matrix shard uses the same image tag and the
+  # terraform-apply job can consume it without aggregating matrix outputs
+  # (matrix job outputs are unreliable).
+  meta:
+    name: Derive image tag
+    runs-on: ubuntu-latest
+    outputs:
+      git_sha: ${{ steps.derive.outputs.sha }}
+    steps:
+      - id: derive
+        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+  build-push:
+    name: Build + push (${{ matrix.deployable }})
+    needs: meta
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        deployable: [ingestion, bff, notifier, setup]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ci-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker auth for Artifact Registry
+        run: gcloud auth configure-docker --quiet ${{ env.REGISTRY }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build + push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          build-args: |
+            DEPLOYABLE=${{ matrix.deployable }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REGISTRY_REPO }}/${{ matrix.deployable }}:${{ needs.meta.outputs.git_sha }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REGISTRY_REPO }}/${{ matrix.deployable }}:latest
+          cache-from: type=gha,scope=${{ matrix.deployable }}
+          cache-to: type=gha,scope=${{ matrix.deployable }},mode=max
+
+  terraform-apply:
+    name: Terraform apply (image tags)
+    needs: [meta, build-push]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ci-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '~> 1.9'
+
+      - name: Terraform init
+        working-directory: terraform/environments/prod
+        run: terraform init -input=false
+
+      - name: Terraform apply (rolling image tags)
+        working-directory: terraform/environments/prod
+        env:
+          TAG: ${{ needs.meta.outputs.git_sha }}
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="project_number=${{ secrets.GCP_PROJECT_NUMBER }}" \
+            -var="cms_base_url=${{ secrets.CMS_BASE_URL }}" \
+            -var="cms_workspace_id=${{ secrets.CMS_WORKSPACE_ID }}" \
+            -var="bff_image_tag=${TAG}" \
+            -var="ingestion_image_tag=${TAG}" \
+            -var="notifier_image_tag=${TAG}" \
+            -var="setup_image_tag=${TAG}"

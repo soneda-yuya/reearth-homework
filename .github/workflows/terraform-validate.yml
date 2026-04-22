@@ -1,0 +1,38 @@
+name: terraform-validate
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+
+permissions:
+  contents: read
+
+# PR checks only validate terraform locally — fmt + init -backend=false +
+# validate. We intentionally do NOT run `terraform plan` because the
+# ci-deployer service account accepts impersonation only from workflows on
+# the main branch (see terraform/modules/shared/wif.tf), so PR OIDC tokens
+# cannot authenticate. Run `terraform plan` locally (gcloud ADC) for a real
+# diff before opening the PR.
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '~> 1.9'
+
+      - name: Terraform fmt check
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init (backend disabled)
+        working-directory: terraform/environments/prod
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform validate
+        working-directory: terraform/environments/prod
+        run: terraform validate

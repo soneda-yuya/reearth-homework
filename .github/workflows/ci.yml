@@ -1,0 +1,96 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: Go (lint / vet / test / vuln)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-go
+
+      - name: gofmt check
+        run: |
+          diff <(gofmt -s -d .) <(echo -n) || {
+            echo "::error::gofmt -s produced diffs"
+            exit 1
+          }
+
+      - name: go vet
+        run: go vet ./...
+
+      # The prebuilt golangci-lint binary is currently shipped with go1.24,
+      # which refuses to analyse a module whose go.mod declares `go 1.26`.
+      # Building from source with the locally-installed Go 1.26 toolchain
+      # sidesteps the mismatch until upstream releases a 1.26-built binary.
+      - name: Install golangci-lint (from source)
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+
+      - name: golangci-lint
+        run: golangci-lint run ./...
+
+      - name: go test (race + coverage)
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: govulncheck
+        run: govulncheck ./...
+
+      - name: Coverage summary
+        run: go tool cover -func=coverage.out | tail -1
+
+  proto:
+    name: Proto (buf lint / breaking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # buf breaking needs main for comparison
+
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          version: '1.47.2'
+
+      - name: buf lint
+        run: buf lint
+
+      # The schema is still pre-1.0 and has no external consumers yet, so
+      # intentional renames may show up as "breaking". We run the check as a
+      # warning until the Flutter app (first consumer) lands — after that
+      # change `continue-on-error` to false so regressions are blocking.
+      - name: buf breaking (non-blocking until consumers exist)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: buf breaking --against "https://github.com/${{ github.repository }}.git#branch=main"
+
+  docker:
+    name: Docker build (all deployables)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        deployable: [ingestion, bff, notifier, setup]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          build-args: |
+            DEPLOYABLE=${{ matrix.deployable }}
+          tags: ${{ matrix.deployable }}:ci
+          cache-from: type=gha,scope=${{ matrix.deployable }}
+          cache-to: type=gha,scope=${{ matrix.deployable }},mode=max

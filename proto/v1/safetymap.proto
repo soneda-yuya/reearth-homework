@@ -63,15 +63,15 @@ message ListNearbyRequest {
 }
 message ListNearbyResponse { repeated SafetyIncident items = 1; }
 
-message GeoJSONRequest { SafetyIncidentFilter filter = 1; }
-message GeoJSONResponse { bytes geojson = 1; }
+message GetSafetyIncidentsAsGeoJSONRequest { SafetyIncidentFilter filter = 1; }
+message GetSafetyIncidentsAsGeoJSONResponse { bytes geojson = 1; }
 
 service SafetyIncidentService {
   rpc ListSafetyIncidents(ListSafetyIncidentsRequest) returns (ListSafetyIncidentsResponse);
   rpc GetSafetyIncident(GetSafetyIncidentRequest) returns (GetSafetyIncidentResponse);
   rpc SearchSafetyIncidents(SearchSafetyIncidentsRequest) returns (SearchSafetyIncidentsResponse);
   rpc ListNearby(ListNearbyRequest) returns (ListNearbyResponse);
-  rpc GetSafetyIncidentsAsGeoJSON(GeoJSONRequest) returns (GeoJSONResponse);
+  rpc GetSafetyIncidentsAsGeoJSON(GetSafetyIncidentsAsGeoJSONRequest) returns (GetSafetyIncidentsAsGeoJSONResponse);
 }
 
 // ---- CrimeMap ----

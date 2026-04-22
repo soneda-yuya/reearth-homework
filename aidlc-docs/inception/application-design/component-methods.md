@@ -720,7 +720,7 @@ service SafetyIncidentService {
   rpc GetSafetyIncident(GetSafetyIncidentRequest) returns (GetSafetyIncidentResponse);
   rpc SearchSafetyIncidents(SearchSafetyIncidentsRequest) returns (SearchSafetyIncidentsResponse);
   rpc ListNearby(ListNearbyRequest) returns (ListNearbyResponse);
-  rpc GetSafetyIncidentsAsGeoJSON(GeoJSONRequest) returns (GeoJSONResponse);
+  rpc GetSafetyIncidentsAsGeoJSON(GetSafetyIncidentsAsGeoJSONRequest) returns (GetSafetyIncidentsAsGeoJSONResponse);
 }
 
 service CrimeMapService {

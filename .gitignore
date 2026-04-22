@@ -26,11 +26,15 @@ gen/**/*.pb.go.tmp
 Thumbs.db
 
 # Terraform
-terraform/.terraform/
-terraform/*.tfstate
-terraform/*.tfstate.backup
-terraform/*.tfplan
-terraform/crash.log
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.backup
+**/*.tfplan
+**/crash.log
+terraform/environments/*/plan.txt
+
+# Claude Code agent scratch
+.claude/scheduled_tasks.lock
 
 # Coverage
 coverage.out

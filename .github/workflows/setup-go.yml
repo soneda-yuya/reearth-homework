@@ -1,0 +1,20 @@
+# Intentionally minimal: tool installation lives in
+# .github/actions/setup-go (composite action) so it can run as a step
+# inside any job. Keeping this file prevents accidental recreation of a
+# reusable workflow with the same role. Run manually only to verify the
+# composite action installs cleanly.
+name: setup-go-smoke
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
+      - run: |
+          go version
+          buf --version
+          govulncheck -version
