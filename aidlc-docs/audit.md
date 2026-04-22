@@ -656,3 +656,23 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: U-PLT Build and Test 承認待ち。承認後に U-CSS へ遷移し、合本化 Minimal 版で進める。
 
 ---
+
+## U-PLT Build and Test Merged + U-CSS Start
+
+**Timestamp**: 2026-04-22T18:10:00Z
+**User Input**: "承認です。マージして次に進んでください"
+**AI Actions**:
+1. PR #19 を squash マージ（commit `12e2d71`）。**U-PLT Unit 全サブステージ完了**。
+2. aidlc-state.md を「U-CSS 進行中 / Minimal 合本版 計画質問作成」に更新。
+3. `aidlc-docs/construction/plans/U-CSS-design-plan.md` を **Minimal 合本版** の 6 計画質問付きで作成:
+   - SchemaDefinition の対象範囲（Project/Model/Field フル宣言 vs 一部）
+   - 既存リソースとの差分適用（冪等 CREATE vs 上書き vs エラー）
+   - 実行モード（手動のみ vs CI 自動）
+   - エラーハンドリング（fail fast vs 続行 vs ロールバック）
+   - テスト戦略（unit + mock vs httptest 追加）
+   - Field 定義の保守方法（Go コード vs 外部 YAML vs env override）
+4. U-PLT で確定済みの共通規約（slog/OTel/envconfig/errs/retry/ratelimit/Clock/terraform module/CI/Dockerfile）は「踏襲するため本ドキュメントでは決めない」と明示。
+
+**Context**: U-CSS 計画質問の回答待ち。回答後に `U-CSS-design.md`（合本版）を生成する。
+
+---

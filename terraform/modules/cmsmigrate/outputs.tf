@@ -3,5 +3,5 @@ output "runtime_sa_email" {
 }
 
 output "job_name" {
-  value = google_cloud_run_v2_job.setup.name
+  value = google_cloud_run_v2_job.cmsmigrate.name
 }

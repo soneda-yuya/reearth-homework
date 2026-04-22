@@ -56,7 +56,7 @@ variable "notifier_image_tag" {
   default = "latest"
 }
 
-variable "setup_image_tag" {
+variable "cmsmigrate_image_tag" {
   type    = string
   default = "latest"
 }

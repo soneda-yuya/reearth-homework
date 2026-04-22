@@ -4,7 +4,7 @@
 
 | リポジトリ | 役割 | 使用技術 |
 |---|---|---|
-| **reearth-homework**（このリポジトリ） | Go サーバーモノレポ（ingestion / bff / notifier / setup） | Go 単一モジュール、**DDD: Bounded Context × Layered Architecture** |
+| **reearth-homework**（このリポジトリ） | Go サーバーモノレポ（ingestion / bff / notifier / cmsmigrate） | Go 単一モジュール、**DDD: Bounded Context × Layered Architecture** |
 | **overseas-safety-map-app**（新規作成予定） | Flutter アプリ | Dart / Flutter、Clean Architecture + MVVM、Riverpod |
 
 > **暗黙決定（設計者注）**: Q2 で単一 Go モジュールを選択、Q7 で Pub/Sub 分離型を選択したため、通知 Cloud Function（Pub/Sub サブスクライバ）は **Go で実装し、同じ Go モノレポの `cmd/notifier` に配置** する。言語統一のメリットとドメイン／リポジトリの再利用性を優先。
@@ -16,7 +16,7 @@
 | `safetyincident` | **Core** | MOFA 取り込み・LLM 抽出・ジオコード・CMS 永続化・読み取り/検索。サブドメイン `crimemap` を内包。 |
 | `notification` | Supporting | 新着 Domain Event を受けて対象ユーザーへ FCM 配信。 |
 | `user` | Supporting | Firebase Auth 検証 + Firestore 上のユーザープロファイル（お気に入り・通知設定・FCM トークン）。 |
-| `cmssetup` | Supporting | reearth-cms の Project / Model / Field 冪等作成。 |
+| `cmsmigrate` | Supporting | reearth-cms の Project / Model / Field 冪等作成。 |
 
 各 Context 内は `domain` / `application` / `infrastructure` の 3 レイヤで構成し、依存は内向き。詳細なディレクトリ構造は [application-design.md §6](./application-design.md#6-リポジトリとディレクトリ構造予定) 参照。
 
@@ -56,7 +56,7 @@
 - **Adapter**: `internal/safetyincident/infrastructure/cms`（Integration API 経由）
 
 ##### C-05: reearth-cms Client（`platform/cmsx`）
-- **責務**: reearth-cms Integration REST API の低レベルクライアント。`safetyincident.infrastructure.cms` と `cmssetup.infrastructure.cms` の双方が利用。
+- **責務**: reearth-cms Integration REST API の低レベルクライアント。`safetyincident.infrastructure.cms` と `cmsmigrate.infrastructure.cms` の双方が利用。
 - **パッケージ**: `internal/platform/cmsx`（素材としての HTTP クライアント。ドメインには依存しない）
 
 ##### C-06: Event Publisher / Consumer（ingestion→notification の Pub/Sub 連携）
@@ -98,13 +98,13 @@
   - `internal/notification/infrastructure/fcm` — PushSender 実装
   - `internal/notification/infrastructure/eventbus` — Pub/Sub Subscriber
 
-#### 🟦 Context: `cmssetup`（Supporting）
+#### 🟦 Context: `cmsmigrate`（Supporting）
 
 ##### C-11: CMS Schema Bootstrapper
 - **責務**: 安全情報 Model / Field の宣言的定義を冪等に適用する。
 - **Domain**: `SchemaDefinition`（宣言的に「安全情報 Model にこのフィールドが必要」を表現する VO 群）
 - **Application**: `EnsureSchemaUseCase`
-- **Adapter**: `internal/cmssetup/infrastructure/cms/schema_applier.go`（`platform/cmsx` を使う）
+- **Adapter**: `internal/cmsmigrate/infrastructure/cms/schema_applier.go`（`platform/cmsx` を使う）
 
 #### 🎯 Interface（入口）レイヤ
 
@@ -115,8 +115,8 @@
 
 ##### C-09 / C-11 / C-12: Job ランナー
 - **配置**: `internal/interfaces/job`
-- **責務**: ingestion / setup / notifier のエントリポイント。`safetyincident.application.IngestUseCase` / `cmssetup.application.EnsureSchemaUseCase` / `notification.application.DispatchOnNewArrivalUseCase` をループ駆動する。
-- **起動 main**: `cmd/ingestion/main.go`、`cmd/setup/main.go`、`cmd/notifier/main.go`（Composition Root）
+- **責務**: ingestion / cmsmigrate / notifier のエントリポイント。`safetyincident.application.IngestUseCase` / `cmsmigrate.application.EnsureSchemaUseCase` / `notification.application.DispatchOnNewArrivalUseCase` をループ駆動する。
+- **起動 main**: `cmd/ingestion/main.go`、`cmd/cmsmigrate/main.go`、`cmd/notifier/main.go`（Composition Root）
 
 #### 📦 Platform / Shared（横断）
 
@@ -184,7 +184,7 @@
 | 犯罪マップ集計 | `safetyincident/crimemap` / C-08 |
 | ingestion 実行エントリ | `cmd/ingestion` → `interfaces/job` → `safetyincident.application.IngestUseCase` |
 | BFF 実行エントリ | `cmd/bff` → `interfaces/rpc` |
-| CMS セットアップ | `cmd/setup` → `interfaces/job` → `cmssetup.application.EnsureSchemaUseCase` |
+| CMS セットアップ | `cmd/cmsmigrate` → `interfaces/job` → `cmsmigrate.application.EnsureSchemaUseCase` |
 | 通知配信 | `cmd/notifier` → `interfaces/job` → `notification.application.DispatchOnNewArrivalUseCase` |
 | ログ・メトリクス・トレース | `platform/observability` / C-13 |
 | Flutter 画面・状態管理 | C-20 / C-21 / C-22 / C-23 |

@@ -18,7 +18,7 @@ graph LR
             CI["cmd/ingestion"]
             CB["cmd/bff"]
             CN["cmd/notifier"]
-            CS["cmd/setup"]
+            CS["cmd/cmsmigrate"]
         end
 
         subgraph Interfaces["internal/interfaces"]
@@ -49,7 +49,7 @@ graph LR
             N_INF["infrastructure<br/>(firestore, fcm, eventbus)"]
         end
 
-        subgraph SetupCtx["Context: cmssetup (Supporting)"]
+        subgraph SetupCtx["Context: cmsmigrate (Supporting)"]
             CS_APP["application"]
             CS_DOM["domain<br/>(SchemaDefinition)"]
             CS_INF["infrastructure/cms"]
@@ -176,7 +176,7 @@ graph LR
 | `crimemapapp.{Choropleth,Heatmap}UseCase` | — | — | — | — | — | — | — | — | — | — | ✓ | ✓ |
 | `notificationapp.DispatchOnNewArrivalUseCase` | — | — | — | — | — | ✓ | ✓ | — | — | — | — | ✓ |
 | `userapp.*` | — | — | — | — | — | — | — | — | ✓ | — | — | ✓ |
-| `cmssetupapp.EnsureSchemaUseCase` | — | — | — | — | — | — | — | — | — | ✓ (Adapter 経由) | — | ✓ |
+| `cmsmigrateapp.EnsureSchemaUseCase` | — | — | — | — | — | — | — | — | — | ✓ (Adapter 経由) | — | ✓ |
 | `interfaces/rpc.AuthInterceptor` | — | — | — | — | — | — | — | ✓ | — | — | — | ✓ |
 | `interfaces/rpc.*Handler` | — | — | — | — | — | — | — | — | — | — | — | ✓ |
 | `safetyincident.infrastructure.cms.Repository` (Adapter) | — | — | — | — | — | — | — | — | — | ✓ | — | ✓ |
@@ -207,7 +207,7 @@ graph LR
 | `safetyincident/crimemap` | `internal/safetyincident/crimemap/domain` → package `crimemap` | `internal/safetyincident/crimemap/application` → package `crimemapapp` | `internal/safetyincident/crimemap/infrastructure` → package `crimemapinfra` |
 | `user` | `internal/user/domain` → package `user` | `internal/user/application` → package `userapp` | `internal/user/infrastructure/{firebaseauth,firestore}` |
 | `notification` | `internal/notification/domain` → package `notification` | `internal/notification/application` → package `notificationapp` | `internal/notification/infrastructure/{firestore,fcm,eventbus}` |
-| `cmssetup` | `internal/cmssetup/domain` → package `cmssetup` | `internal/cmssetup/application` → package `cmssetupapp` | `internal/cmssetup/infrastructure/cms` → package `cmsapplier` |
+| `cmsmigrate` | `internal/cmsmigrate/domain` → package `cmsmigrate` | `internal/cmsmigrate/application` → package `cmsmigrateapp` | `internal/cmsmigrate/infrastructure/cms` → package `cmsapplier` |
 | Interface | — | — | `internal/interfaces/{rpc,job}` |
 | Platform | — | — | `internal/platform/{config,observability,connectserver,pubsubx,cmsx,firebasex,mapboxx}` |
 | Shared | — | — | `internal/shared/{errs,clock}` |

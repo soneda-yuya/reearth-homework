@@ -498,12 +498,12 @@ func (u *DispatchOnNewArrivalUseCase) Execute(ctx context.Context, msg notificat
 
 ---
 
-## 🟦 Bounded Context: `cmssetup`（Supporting）
+## 🟦 Bounded Context: `cmsmigrate`（Supporting）
 
-### ドメイン（`internal/cmssetup/domain`）
+### ドメイン（`internal/cmsmigrate/domain`）
 
 ```go
-package cmssetup
+package cmsmigrate
 
 // 宣言的スキーマ定義（どの Model にどの Field が必要か）
 type FieldDefinition struct {
@@ -535,7 +535,7 @@ type SchemaDefinition struct {
 }
 ```
 
-### Adapter（`internal/cmssetup/infrastructure/cms`）
+### Adapter（`internal/cmsmigrate/infrastructure/cms`）
 
 ```go
 package cmsapplier
@@ -543,17 +543,17 @@ package cmsapplier
 type SchemaApplier struct{ /* unexported: *cmsx.Client, workspaceID */ }
 func NewSchemaApplier(client *cmsx.Client, workspaceID string) *SchemaApplier
 // Apply は SchemaDefinition を reearth-cms に冪等に適用する
-func (a *SchemaApplier) Apply(ctx context.Context, def cmssetup.SchemaDefinition) error
+func (a *SchemaApplier) Apply(ctx context.Context, def cmsmigrate.SchemaDefinition) error
 ```
 
-### Application（`internal/cmssetup/application`）
+### Application（`internal/cmsmigrate/application`）
 
 ```go
-package cmssetupapp
+package cmsmigrateapp
 
 type EnsureSchemaUseCase struct {
     applier *cmsapplier.SchemaApplier
-    def     cmssetup.SchemaDefinition  // 静的定義
+    def     cmsmigrate.SchemaDefinition  // 静的定義
 }
 func (u *EnsureSchemaUseCase) Execute(ctx context.Context) error
 ```
@@ -612,7 +612,7 @@ type NotifierRunner struct {
 func (r *NotifierRunner) Run(ctx context.Context) error
 
 type SetupRunner struct {
-    usecase *cmssetupapp.EnsureSchemaUseCase
+    usecase *cmsmigrateapp.EnsureSchemaUseCase
 }
 func (r *SetupRunner) Run(ctx context.Context) error
 ```
@@ -626,7 +626,7 @@ func (r *SetupRunner) Run(ctx context.Context) error
 package observability
 
 type Config struct {
-    ServiceName string  // "ingestion" | "bff" | "notifier" | "setup"
+    ServiceName string  // "ingestion" | "bff" | "notifier" | "cmsmigrate"
     Env         string
 }
 func Setup(ctx context.Context, cfg Config) (shutdown func(context.Context) error, err error)

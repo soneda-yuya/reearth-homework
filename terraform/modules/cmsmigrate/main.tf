@@ -1,5 +1,5 @@
-resource "google_cloud_run_v2_job" "setup" {
-  name     = "setup"
+resource "google_cloud_run_v2_job" "cmsmigrate" {
+  name     = "cms-migrate"
   location = var.region
 
   template {
@@ -8,11 +8,11 @@ resource "google_cloud_run_v2_job" "setup" {
       timeout         = "120s"
 
       containers {
-        image = "${var.artifact_registry_url}/setup:${var.image_tag}"
+        image = "${var.artifact_registry_url}/cmsmigrate:${var.image_tag}"
 
         env {
           name  = "PLATFORM_SERVICE_NAME"
-          value = "setup"
+          value = "cmsmigrate"
         }
         env {
           name  = "PLATFORM_ENV"
@@ -27,15 +27,15 @@ resource "google_cloud_run_v2_job" "setup" {
           value = "gcp"
         }
         env {
-          name  = "SETUP_CMS_BASE_URL"
+          name  = "CMSMIGRATE_CMS_BASE_URL"
           value = var.cms_base_url
         }
         env {
-          name  = "SETUP_CMS_WORKSPACE_ID"
+          name  = "CMSMIGRATE_CMS_WORKSPACE_ID"
           value = var.cms_workspace_id
         }
         env {
-          name = "SETUP_CMS_INTEGRATION_TOKEN"
+          name = "CMSMIGRATE_CMS_INTEGRATION_TOKEN"
           value_source {
             secret_key_ref {
               secret  = var.cms_integration_token_secret_name

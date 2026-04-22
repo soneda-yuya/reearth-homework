@@ -5,7 +5,7 @@
 - **プロジェクトタイプ**: グリーンフィールド
 - **開始日**: 2026-04-20T17:55:00Z（アイデア変更のリセット）
 - **現在のフェーズ**: CONSTRUCTION
-- **現在のステージ**: U-PLT（Platform & Proto 基盤）／ Build and Test — 成果物4点生成済、承認待ち
+- **現在のステージ**: U-CSS（CMS Setup Unit）／ Minimal 合本版（Functional + NFR Req + NFR Design）— 計画質問作成、回答待ち
 
 ## ワークフロー圧縮方針（2026-04-22 採用）
 **U-CSS 以降の Unit は Functional Design / NFR Requirements / NFR Design を「Minimal 合本版」1 ドキュメントにまとめる**。U-PLT で共通規約を確定したため、各 Unit 固有の内容のみを簡潔に記述する。Infrastructure Design / Code Generation / Build & Test は従来どおり独立して実施する。
@@ -56,7 +56,13 @@
 - [x] NFR 設計（NFR Design — 承認済み・PR #7 merged）
 - [x] インフラ設計（Infrastructure Design — 単一 prod プロジェクト + Terraform で Cloud Run 含む全リソース管理、承認済み・PR #8 merged）
 - [x] コード生成（Code Generation — PR A #9 merged、PR B #10 merged 2026-04-22）
-- [x] ビルドとテスト（Build and Test — 成果物4点生成、CI 全緑、承認待ち）
+- [x] ビルドとテスト（Build and Test — 承認済み・PR #19 merged 2026-04-22）
+
+#### U-CSS（進行中、Sprint 1）
+- [ ] Minimal 合本版（Functional + NFR Req + NFR Design）— 計画質問作成、回答待ち
+- [ ] インフラ設計（Infrastructure Design）
+- [ ] コード生成（Code Generation）
+- [ ] ビルドとテスト（Build and Test）
 
 #### U-CSS / U-ING / U-BFF / U-NTF / U-APP
 - [ ] 各 Unit を同じ 6 サブステージでループ

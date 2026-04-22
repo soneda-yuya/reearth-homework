@@ -27,8 +27,8 @@
 
 ## Context Summary（Application Design からの確定事項）
 
-- **Bounded Context（バックエンド）**: `safetyincident`（Core、`crimemap` を Subdomain として内包）/ `notification` / `user` / `cmssetup`
-- **Composition Root / Deployable**: `cmd/ingestion`（取り込みパイプライン）/ `cmd/bff`（Connect サーバ）/ `cmd/notifier`（Pub/Sub サブスクライバ）/ `cmd/setup`（CMS スキーマ冪等適用）
+- **Bounded Context（バックエンド）**: `safetyincident`（Core、`crimemap` を Subdomain として内包）/ `notification` / `user` / `cmsmigrate`
+- **Composition Root / Deployable**: `cmd/ingestion`（取り込みパイプライン）/ `cmd/bff`（Connect サーバ）/ `cmd/notifier`（Pub/Sub サブスクライバ）/ `cmd/cmsmigrate`（CMS スキーマ冪等適用）
 - **入口レイヤ**: `internal/interfaces/{rpc,job}`
 - **横断基盤**: `internal/platform/*`（observability / cmsx / firebasex / pubsubx / mapboxx / config / connectserver）、`internal/shared/*`（errs / clock）
 - **Flutter アプリ**: 別リポジトリ（`overseas-safety-map-app`、Clean Architecture + MVVM + Riverpod）
@@ -38,8 +38,8 @@
 **前提となる AI 推奨案（参考）**:
 - Unit は「Construction フェーズで一巡（Functional Design → NFR Req → NFR Design → Infra Design → Code Gen → Build & Test）する粒度」として扱う。
 - 候補は 2 軸:
-  - **軸 A (Deployable 単位)**: ingestion / bff / notifier / setup / flutter-app の 5 Unit + 共通基盤 Platform を 1 Unit（計 6）
-  - **軸 B (Bounded Context 単位)**: safetyincident / user / notification / cmssetup / flutter-app の 5 Unit + Platform（計 6）
+  - **軸 A (Deployable 単位)**: ingestion / bff / notifier / cmsmigrate / flutter-app の 5 Unit + 共通基盤 Platform を 1 Unit（計 6）
+  - **軸 B (Bounded Context 単位)**: safetyincident / user / notification / cmsmigrate / flutter-app の 5 Unit + Platform（計 6）
   - **軸 C (Hybrid)**: BC を基本に Deployable で切り出す混合（例: `safetyincident-ingestion` と `safetyincident-read` に分ける）
 
 ---
@@ -49,8 +49,8 @@
 ### Question 1 — Unit 分割の主軸
 Construction フェーズで一巡する「Unit」の切り方はどれを採用しますか？
 
-A) **Deployable 単位**（推奨）: U-ING（ingestion）/ U-BFF（bff）/ U-NTF（notifier）/ U-SET（setup）/ U-APP（Flutter）/ U-PLT（platform & proto 共通）の 6 Unit
-B) **Bounded Context 単位**: U-SI（safetyincident + crimemap）/ U-USR（user）/ U-NTC（notification）/ U-CSS（cmssetup）/ U-APP（Flutter）/ U-PLT の 6 Unit
+A) **Deployable 単位**（推奨）: U-ING（ingestion）/ U-BFF（bff）/ U-NTF（notifier）/ U-SET（cmsmigrate）/ U-APP（Flutter）/ U-PLT（platform & proto 共通）の 6 Unit
+B) **Bounded Context 単位**: U-SI（safetyincident + crimemap）/ U-USR（user）/ U-NTC（notification）/ U-CSS（cmsmigrate）/ U-APP（Flutter）/ U-PLT の 6 Unit
 C) **Hybrid**: safetyincident だけ「書き込み側（ingestion）」と「読み取り側（bff 用 application）」に分け、他は Deployable 単位に寄せる
 X) Other（[Answer]: の後ろに自由記述）
 
@@ -79,7 +79,7 @@ X) Other（[Answer]: の後ろに自由記述）
 ### Question 4 — デプロイモデル
 各 Deployable をどのように配置しますか？
 
-A) **Cloud Run 系ですべて統一**: ingestion = Cloud Run Job、bff = Cloud Run Service、notifier = Cloud Run Service（Pub/Sub push 受け）、setup = Cloud Run Job 単発（推奨）
+A) **Cloud Run 系ですべて統一**: ingestion = Cloud Run Job、bff = Cloud Run Service、notifier = Cloud Run Service（Pub/Sub push 受け）、cmsmigrate = Cloud Run Job 単発（推奨）
 B) **Functions 混在**: ingestion は GitHub Actions、notifier は Cloud Functions（Pub/Sub trigger）、bff だけ Cloud Run
 C) **単一コンテナに同居**: 1 プロセスで複数役割、サブコマンド切替
 X) Other（[Answer]: の後ろに自由記述）

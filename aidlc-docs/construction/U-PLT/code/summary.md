@@ -32,7 +32,7 @@ PR B の当初構成から、**module × environment の 2 層構成** にリフ
 | `terraform/modules/bff/{main,service_account,iam,variables,outputs}.tf` | Service (public) + runtime SA + Secret Accessor + Firestore/Auth IAM |
 | `terraform/modules/ingestion/{main,scheduler,service_account,iam,variables,outputs}.tf` | Job + Cloud Scheduler + Pub/Sub publisher IAM + 3 Secret Accessor |
 | `terraform/modules/notifier/{main,subscription,service_account,iam,variables,outputs}.tf` | Service (internal) + Pub/Sub push Subscription + DLQ + TokenCreator |
-| `terraform/modules/setup/{main,service_account,iam,variables,outputs}.tf` | Job + Secret Accessor |
+| `terraform/modules/cmsmigrate/{main,service_account,iam,variables,outputs}.tf` | Job + Secret Accessor |
 | `terraform/README.md` | 使い方 / Bootstrap 手順 / dev 環境追加ガイド |
 
 ### Phase 9: CI/CD（5 ファイル）

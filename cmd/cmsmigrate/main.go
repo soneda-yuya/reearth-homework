@@ -1,6 +1,7 @@
-// Command setup applies the reearth-cms Project / Model / Field schema for
-// SafetyIncident. It runs as a one-shot Cloud Run Job (idempotent) during
-// initial deployment and after any schema change.
+// Command cmsmigrate applies the reearth-cms Project / Model / Field schema
+// for SafetyIncident. It runs as an idempotent one-shot Cloud Run Job during
+// initial deployment and after any schema change (Terraform-like apply over
+// the CMS Integration API).
 package main
 
 import (
@@ -14,13 +15,13 @@ import (
 	"github.com/soneda-yuya/reearth-homework/internal/platform/observability"
 )
 
-type setupConfig struct {
+type cmsmigrateConfig struct {
 	config.Common
 	// TODO(U-CSS): CMSBaseURL, CMSWorkspaceID, CMSIntegrationToken.
 }
 
 func main() {
-	var cfg setupConfig
+	var cfg cmsmigrateConfig
 	config.MustLoad(&cfg)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -38,11 +39,11 @@ func main() {
 	}
 	defer func() { _ = shutdown(context.Background()) }()
 
-	observability.Logger(ctx).Info("setup starting (skeleton)")
+	observability.Logger(ctx).Info("cmsmigrate starting (skeleton)")
 
 	// TODO(U-CSS): Wrap the ensure-schema use case so panics are recovered
 	//              and exit status reflects success.
-	// if err := observability.WrapJobRun(ctx, "setup", ...); err != nil { os.Exit(1) }
+	// if err := observability.WrapJobRun(ctx, "cmsmigrate", ...); err != nil { os.Exit(1) }
 
-	observability.Logger(ctx).Info("setup skeleton finished (no-op)")
+	observability.Logger(ctx).Info("cmsmigrate skeleton finished (no-op)")
 }

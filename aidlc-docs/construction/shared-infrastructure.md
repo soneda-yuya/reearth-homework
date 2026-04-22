@@ -26,7 +26,7 @@
   - `ingestion-runtime` — Pub/Sub Publisher + Secret Accessor（ingestion 関連のみ）
   - `bff-runtime` — Firestore User + Firebase Auth Admin + Secret Accessor（bff 関連のみ）
   - `notifier-runtime` — Pub/Sub Subscriber + Firestore User + FCM Admin
-  - `setup-runtime` — Secret Accessor（CMS token のみ）
+  - `cmsmigrate-runtime` — Secret Accessor（CMS token のみ）
 - **原則**: 最小権限。各 SA は担当 Secret のみ `secretmanager.versions.access` binding
 
 ## 3. IaC: Terraform
@@ -54,7 +54,7 @@
 | Secret | `{deployable}-{purpose}` または `{scope}-{purpose}` | `ingestion-claude-api-key`、`cms-integration-token`（共有） |
 | Pub/Sub Topic | `{domain}.{event}` | `safety-incident.new-arrival` |
 | Pub/Sub Subscription | `{subscriber-deployable}-{topic}` | `notifier-safety-incident-new-arrival` |
-| Cloud Run Service/Job | `{deployable}` | `bff` / `ingestion` / `notifier` / `setup` |
+| Cloud Run Service/Job | `{deployable}` | `bff` / `ingestion` / `notifier` / `cmsmigrate` |
 | Cloud Scheduler Job | `{deployable}-{purpose}` | `ingestion-new-arrival-5min` |
 | Artifact Registry | `app`（リポジトリ名） | `.../app/` |
 
@@ -71,7 +71,7 @@
 |---|---|---|
 | `ingestion-claude-api-key` | Claude | `ingestion-runtime` |
 | `ingestion-mapbox-api-key` | Mapbox | `ingestion-runtime` |
-| `cms-integration-token` | reearth-cms（共有） | `ingestion-runtime` / `bff-runtime` / `setup-runtime` |
+| `cms-integration-token` | reearth-cms（共有） | `ingestion-runtime` / `bff-runtime` / `cmsmigrate-runtime` |
 | `firebase-service-account-json` | Firebase Admin SDK（共有） | `bff-runtime` / `notifier-runtime` |
 
 ## 8. 観測性
@@ -121,7 +121,7 @@ Flutter アプリは **別リポジトリ `overseas-safety-map-app`** で独立 
 
 | Unit | 固有で記述する範囲 |
 |---|---|
-| U-CSS | `cmd/setup` 用 Cloud Run Job の実行タイミング、SA 権限調整 |
+| U-CSS | `cmd/cmsmigrate` 用 Cloud Run Job の実行タイミング、SA 権限調整 |
 | U-ING | `cmd/ingestion` 用 Cloud Run Job、Cloud Scheduler 設定、Pub/Sub Publisher 権限 |
 | U-BFF | `cmd/bff` 用 Cloud Run Service、Ingress / ドメイン、Firestore Security Rules |
 | U-NTF | `cmd/notifier` 用 Cloud Run Service（Pub/Sub push）、DLQ 設定、FCM 権限 |
