@@ -1,8 +1,10 @@
 // Package validate provides request-level validation helpers used by Connect
 // handlers and job runners before any business logic runs.
 //
-// All functions return errors wrapped with [errs.KindInvalidInput] so the
-// Connect interceptor can map them to InvalidArgument automatically.
+// All functions return errors wrapped with [errs.KindInvalidInput]. Downstream
+// units (U-BFF) are expected to wire a Connect interceptor that maps
+// [errs.KindInvalidInput] to connect.CodeInvalidArgument — U-PLT defines the
+// kind taxonomy but does not ship that interceptor itself.
 package validate
 
 import (

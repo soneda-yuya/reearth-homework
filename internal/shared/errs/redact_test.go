@@ -25,24 +25,28 @@ func TestRedact_LongStringKeepsOnlyFourChars(t *testing.T) {
 	}
 }
 
-// Property: for strings of length > 8, Redact always hides at least len-4 characters.
-func TestProp_RedactLeaksAtMostFourChars(t *testing.T) {
+// Property: for strings of length > 8, Redact preserves exactly the first two
+// and last two characters, joins them with "...", and never embeds the full
+// original string.
+func TestProp_RedactKeepsOnlyPrefixAndSuffix(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		s := rapid.StringN(9, 200, -1).Draw(t, "s")
 		got := errs.Redact(s)
+
+		// Must not contain the full original.
 		if strings.Contains(got, s) {
-			t.Fatalf("Redact leaked the full string: %q in %q", s, got)
+			t.Fatalf("Redact leaked the full string: %q -> %q", s, got)
 		}
-		// At most 4 characters from the original should appear.
-		leaked := 0
-		for _, r := range s {
-			if strings.ContainsRune(got, r) {
-				leaked++
-			}
+		// Must have exactly the shape: first2 + "..." + last2.
+		want := s[:2] + "..." + s[len(s)-2:]
+		if got != want {
+			t.Fatalf("Redact(%q) = %q, want %q", s, got, want)
 		}
-		// This is an upper bound heuristic: a character might naturally appear
-		// in "[REDACTED]" or the ellipsis. The important property is that the
-		// full original string is not embedded.
-		_ = leaked
+		// And the middle (indexes 2..len-2) must not appear anywhere in the
+		// output — that is the actual secrecy property.
+		middle := s[2 : len(s)-2]
+		if len(middle) > 0 && strings.Contains(got, middle) {
+			t.Fatalf("middle %q leaked into %q", middle, got)
+		}
 	})
 }

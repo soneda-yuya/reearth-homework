@@ -10,15 +10,19 @@ import (
 	"net/http"
 	"time"
 
-	"connectrpc.com/connect"
-
 	"github.com/soneda-yuya/reearth-homework/internal/platform/observability"
 )
 
 // HandlerRegistration binds a Connect handler (path, http.Handler) produced by
 // a generated ServiceHandler constructor such as:
 //
-//	connectrpc.NewSafetyIncidentServiceHandler(impl, opts...) // returns (path, http.Handler)
+//	connectrpc.NewSafetyIncidentServiceHandler(impl, connect.WithInterceptors(...))
+//	// returns (path, http.Handler)
+//
+// Interceptors must be applied at handler construction (via
+// connect.WithInterceptors) before the handler is passed to New. Server does
+// not inject interceptors because a connect.UnaryInterceptor cannot be
+// retrofitted onto an already-built http.Handler.
 type HandlerRegistration struct {
 	Path    string
 	Handler http.Handler
@@ -36,15 +40,14 @@ type Config struct {
 
 // Server bundles the Connect mux, health endpoints, and the HTTP listener.
 type Server struct {
-	cfg          Config
-	httpServer   *http.Server
-	handlers     []HandlerRegistration
-	interceptors []connect.Interceptor
-	probers      []Prober
+	cfg        Config
+	httpServer *http.Server
+	handlers   []HandlerRegistration
+	probers    []Prober
 }
 
 // New constructs the Server. Call Start to block until shutdown.
-func New(cfg Config, handlers []HandlerRegistration, interceptors []connect.Interceptor, probers []Prober) *Server {
+func New(cfg Config, handlers []HandlerRegistration, probers []Prober) *Server {
 	if cfg.Port == 0 {
 		cfg.Port = 8080
 	}
@@ -64,10 +67,9 @@ func New(cfg Config, handlers []HandlerRegistration, interceptors []connect.Inte
 		cfg.ReadyzTimeout = 3 * time.Second
 	}
 	return &Server{
-		cfg:          cfg,
-		handlers:     handlers,
-		interceptors: interceptors,
-		probers:      probers,
+		cfg:      cfg,
+		handlers: handlers,
+		probers:  probers,
 	}
 }
 

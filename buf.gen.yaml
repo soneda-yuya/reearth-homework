@@ -1,12 +1,15 @@
 version: v2
 clean: true
+# With paths=source_relative, generated files are placed under {out}/{relative proto path}.
+# Our protos live in proto/v1/*.proto and declare `go_package = .../gen/go/v1;...`,
+# so out must be `gen/go` (not `gen/go/v1`) — otherwise files land in gen/go/v1/v1/.
 plugins:
   - remote: buf.build/protocolbuffers/go:v1.36.5
-    out: gen/go/v1
+    out: gen/go
     opt:
       - paths=source_relative
   - remote: buf.build/connectrpc/go:v1.18.1
-    out: gen/go/v1
+    out: gen/go
     opt:
       - paths=source_relative
 inputs:

@@ -52,11 +52,10 @@ func ShouldRetry(err error) bool {
 // runs immediately.
 //
 // Do returns early if ctx is cancelled, or if op returns a non-retryable
-// error (per ShouldRetry).
+// error (per ShouldRetry). Partially-filled Policy values are normalised to
+// DefaultPolicy defaults so the backoff contract always holds.
 func Do(ctx context.Context, policy Policy, op func(context.Context) error) error {
-	if policy.MaxAttempts <= 0 {
-		policy.MaxAttempts = 1
-	}
+	policy = normalize(policy)
 	delay := policy.Initial
 	var lastErr error
 
@@ -81,6 +80,30 @@ func Do(ctx context.Context, policy Policy, op func(context.Context) error) erro
 		delay = nextDelay(delay, policy)
 	}
 	return lastErr
+}
+
+// normalize fills in any zero-valued Policy fields from DefaultPolicy so that
+// callers cannot accidentally configure a tight-loop retry (e.g. Initial=0).
+func normalize(p Policy) Policy {
+	if p.MaxAttempts <= 0 {
+		p.MaxAttempts = DefaultPolicy.MaxAttempts
+	}
+	if p.Initial <= 0 {
+		p.Initial = DefaultPolicy.Initial
+	}
+	if p.Max <= 0 {
+		p.Max = DefaultPolicy.Max
+	}
+	if p.Initial > p.Max {
+		p.Initial = p.Max
+	}
+	if p.Multiplier <= 1 {
+		p.Multiplier = DefaultPolicy.Multiplier
+	}
+	if p.Jitter < 0 {
+		p.Jitter = 0
+	}
+	return p
 }
 
 func nextDelay(cur time.Duration, p Policy) time.Duration {

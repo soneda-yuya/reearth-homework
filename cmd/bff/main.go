@@ -40,15 +40,10 @@ func main() {
 	}
 	defer func() { _ = shutdown(context.Background()) }()
 
-	srv := connectserver.New(
-		connectserver.Config{Port: cfg.Port},
-		// TODO(U-BFF): register SafetyIncidentService / CrimeMapService / UserProfileService handlers.
-		nil,
-		// TODO(U-BFF): interceptors including AuthInterceptor (user.AuthVerifier).
-		nil,
-		// TODO(U-BFF): Probers (cmsx, firebasex).
-		nil,
-	)
+	// TODO(U-BFF): register SafetyIncidentService / CrimeMapService / UserProfileService
+	// handlers here; apply interceptors (RecoverInterceptor, AuthInterceptor) via
+	// connect.WithInterceptors at handler construction. Register cmsx/firebasex probers.
+	srv := connectserver.New(connectserver.Config{Port: cfg.Port}, nil, nil)
 	observability.Logger(ctx).Info("bff starting", "port", cfg.Port)
 	if err := srv.Start(ctx); err != nil {
 		observability.Logger(ctx).Error("bff server stopped with error", "err", err)

@@ -79,7 +79,13 @@ func Setup(ctx context.Context, cfg Config) (ShutdownFunc, error) {
 	// Only stdout is implemented here; the "gcp" branch would plug in the
 	// Cloud Trace exporter. We log a warning instead of failing so deploys
 	// are not blocked while the gcp exporter is wired up later.
-	traceExporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	// Pretty print is dev-only: prod/staging should emit compact JSON to
+	// avoid log-volume blow-up in Cloud Logging.
+	traceOpts := []stdouttrace.Option{}
+	if strings.EqualFold(cfg.Env, "dev") || strings.EqualFold(cfg.Env, "test") {
+		traceOpts = append(traceOpts, stdouttrace.WithPrettyPrint())
+	}
+	traceExporter, err := stdouttrace.New(traceOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("observability: trace exporter: %w", err)
 	}

@@ -41,10 +41,7 @@ func main() {
 
 	// Notifier is reached via Pub/Sub push -> HTTP POST, so the Cloud Run
 	// Service model applies. U-NTF will register /pubsub/push on the mux.
-	srv := connectserver.New(
-		connectserver.Config{Port: cfg.Port},
-		nil, nil, nil,
-	)
+	srv := connectserver.New(connectserver.Config{Port: cfg.Port}, nil, nil)
 	observability.Logger(ctx).Info("notifier starting", "port", cfg.Port)
 	if err := srv.Start(ctx); err != nil {
 		observability.Logger(ctx).Error("notifier stopped with error", "err", err)
