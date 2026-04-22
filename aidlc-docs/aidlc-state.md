@@ -5,7 +5,7 @@
 - **プロジェクトタイプ**: グリーンフィールド
 - **開始日**: 2026-04-20T17:55:00Z（アイデア変更のリセット）
 - **現在のフェーズ**: CONSTRUCTION
-- **現在のステージ**: U-PLT（Platform & Proto 基盤）／ Minimal Functional Design — 成果物3点生成済み、承認待ち
+- **現在のステージ**: U-PLT（Platform & Proto 基盤）／ NFR Requirements — 成果物2点生成済み、承認待ち
 
 ## アイデア概要
 - **データソース**: 外務省 海外安全情報オープンデータ（XML、5分毎更新、無償・商用可）
@@ -48,8 +48,8 @@
 現在: U-PLT（Sprint 0）に着手中。以降の Unit は依存順に順次進行。
 
 #### U-PLT（進行中）
-- [x] 機能設計（Functional Design — Minimal 版、承認待ち）
-- [ ] NFR 要件（NFR Requirements）
+- [x] 機能設計（Functional Design — Minimal 版、承認済み・PR #5 merged）
+- [x] NFR 要件（NFR Requirements — Go 1.26 採用、承認待ち）
 - [ ] NFR 設計（NFR Design）
 - [ ] インフラ設計（Infrastructure Design）
 - [ ] コード生成（Code Generation）
