@@ -703,3 +703,25 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成してレビュー依頼。承認後に U-CSS Infrastructure Design へ進む。
 
 ---
+
+## U-CSS Design Merged + Infrastructure Design Plan Start
+
+**Timestamp**: 2026-04-22T20:05:00Z
+**User Input**: "マージしましょう。承認です" → "A"（Infrastructure Design は計画質問を作成してから進める選択）
+**AI Actions**:
+1. PR #21 を squash マージ（commit `900ce13`）。U-CSS Minimal 合本版 Design 完了。
+2. Feature branch `feature/u-css-infra-plan` を切って `construction/plans/U-CSS-infrastructure-design-plan.md` を作成。
+3. U-PLT で雛形が整っている前提で、**U-CSS 固有の差分確認に絞った 6 質問** を用意:
+   - Q1: Job リソース制限（現状 cpu=1 / memory=256Mi の維持 vs 調整）
+   - Q2: Task Timeout（現状 120s の維持 vs 300s / 60s）
+   - Q3: Max Retries（手動実行前提で 0 推奨 vs GCP 既定 3 維持 vs 1）
+   - Q4: Secret rotation 手順（latest 追従 vs version 固定 vs 自動化）
+   - Q5: **reearth-cms 本体のホスト前提**（外部既存 / 同プロジェクト内 / SaaS）
+   - Q6: 監視・アラート（ログ運用のみ vs Monitoring Alert vs Sink+Function）
+4. aidlc-state.md を「U-CSS Infrastructure Design 計画質問作成、回答待ち」に更新。
+
+**Note**: Q5（reearth-cms 本体のホスト）だけは前提条件の確定が必要な質問で、他は実装調整レベル。Q5 の答え次第で Terraform スコープが変わる可能性あり。
+
+**Context**: PR を作成して計画レビュー。回答後に Infrastructure Design 本編を生成する。
+
+---
