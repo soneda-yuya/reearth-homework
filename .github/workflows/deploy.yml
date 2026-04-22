@@ -83,7 +83,7 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ci-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '~> 1.9'
 
