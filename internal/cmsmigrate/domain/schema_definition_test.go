@@ -253,16 +253,17 @@ func pickFieldType(t *rapid.T) domain.FieldType {
 	return choices[idx]
 }
 
-// genProjectAlias emits `<prefix>-<lowercase alnum...>` which always matches
-// aliasProjectRe (kebab-case, starts with lowercase). The prefix keeps the
-// generator cheap (no retry loop for the first character).
+// genProjectAlias emits `<prefix><kebab body>` — the prefix is a lowercase
+// letter so the leading-char rule holds, and the body (possibly empty) is
+// zero or more of `[a-z0-9-]`. The result always matches aliasProjectRe.
 func genProjectAlias(t *rapid.T, prefix string) string {
 	body := rapid.StringMatching(`[a-z0-9-]{0,12}`).Draw(t, prefix+"_body")
 	return prefix + body
 }
 
-// genFieldAlias emits `f_<lowercase alnum_...>`, which always matches the
-// snake_case rule for fields.
+// genFieldAlias emits `f<lowercase alnum_...>` (that is, `f` followed by zero
+// or more lowercase letters, digits, or underscores), which always matches
+// the snake_case rule for fields.
 func genFieldAlias(t *rapid.T) string {
 	body := rapid.StringMatching(`[a-z0-9_]{0,12}`).Draw(t, "fa_body")
 	return "f" + body

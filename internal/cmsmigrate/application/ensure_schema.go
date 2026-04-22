@@ -227,7 +227,9 @@ func (u *EnsureSchemaUseCase) flushDriftWarnings(ctx context.Context, warnings [
 	if len(warnings) == 0 {
 		return
 	}
-	attrs := make([]any, 0, 2*len(warnings)+2)
+	// Each warning contributes 4 elements (2 key/value pairs) plus the
+	// leading phase pair of 2, so the capacity matches the final length.
+	attrs := make([]any, 0, 4*len(warnings)+2)
 	attrs = append(attrs, "app.cmsmigrate.phase", "drift")
 	for i, w := range warnings {
 		attrs = append(attrs,

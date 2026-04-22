@@ -16,8 +16,8 @@ import (
 	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
 )
 
-// newClient stands up a test server + configured client. The returned
-// teardown func must be deferred.
+// newClient stands up a test server and a configured client. The returned
+// server should be closed by the caller, typically with defer srv.Close().
 func newClient(h http.HandlerFunc) (*cmsx.Client, *httptest.Server) {
 	srv := httptest.NewServer(h)
 	c := cmsx.NewClient(cmsx.Config{

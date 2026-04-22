@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -222,14 +221,9 @@ func (c *Client) doOnce(ctx context.Context, method, u string, in, out any) erro
 	}
 }
 
-// ErrConflict is provided for callers that want to branch on CMS-side
-// conflicts without importing errs. It is intentionally small; most callers
-// should use errs.IsKind(err, errs.KindConflict) directly.
-var ErrConflict = errors.New("cmsx: conflict")
-
-// ToRemoteField adapts a FieldDTO into the application-layer RemoteField
-// shape. Exported so the cmsclient adapter does not re-implement the type
-// translation.
+// ToDomainType adapts a FieldDTO's wire type string into the domain's
+// FieldType. Exported so the cmsclient adapter does not re-implement the
+// translation table.
 func (d FieldDTO) ToDomainType() domain.FieldType {
 	return fieldTypeFromAPI(d.Type)
 }
