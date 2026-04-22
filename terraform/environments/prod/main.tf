@@ -10,6 +10,11 @@ provider "google-beta" {
 
 locals {
   env = "prod"
+  # Must match the bucket declared in versions.tf backend block exactly.
+  # Backend config cannot reference variables so we duplicate the literal
+  # here deliberately; a mismatch would leave ci-deployer without access
+  # to the real state bucket.
+  tfstate_bucket = "overseas-safety-map-tfstate"
 }
 
 module "shared" {
@@ -19,7 +24,7 @@ module "shared" {
   project_number    = var.project_number
   region            = var.region
   github_repository = var.github_repository
-  tfstate_bucket    = var.tfstate_bucket
+  tfstate_bucket    = local.tfstate_bucket
 }
 
 module "bff" {

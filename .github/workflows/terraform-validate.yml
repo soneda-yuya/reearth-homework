@@ -1,4 +1,4 @@
-name: terraform-plan
+name: terraform-validate
 
 on:
   pull_request:
@@ -8,13 +8,12 @@ on:
 permissions:
   contents: read
 
-# Note: we intentionally do NOT run `terraform plan` from pull-request
-# workflows. The ci-deployer service account only allows impersonation from
-# workflows running on the main branch (see terraform/modules/shared/wif.tf),
-# which blocks PR OIDC tokens. Running fmt + validate here gives the same
-# early signal for drift / syntax errors without requiring a read-only SA or
-# relaxing the WIF binding. Run `terraform plan` locally (gcloud ADC) for a
-# real diff before opening the PR.
+# PR checks only validate terraform locally — fmt + init -backend=false +
+# validate. We intentionally do NOT run `terraform plan` because the
+# ci-deployer service account accepts impersonation only from workflows on
+# the main branch (see terraform/modules/shared/wif.tf), so PR OIDC tokens
+# cannot authenticate. Run `terraform plan` locally (gcloud ADC) for a real
+# diff before opening the PR.
 
 jobs:
   validate:

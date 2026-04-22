@@ -19,11 +19,12 @@ variable "github_repository" {
   default = "soneda-yuya/reearth-homework"
 }
 
-variable "tfstate_bucket" {
-  description = "GCS bucket holding terraform state. Created manually during bootstrap."
-  type        = string
-  default     = "overseas-safety-map-tfstate"
-}
+# NOTE: the tfstate bucket name is deliberately NOT a variable. Terraform
+# backend config is static (it cannot reference variables), so the bucket
+# name lives in versions.tf as a literal. The same literal is reused as a
+# local in main.tf so the ci-deployer IAM grant always targets the exact
+# bucket used for backend state; making it variable would let an override
+# silently misalign IAM and backend.
 
 # ---- External configuration ------------------------------------------------
 variable "mofa_base_url" {
