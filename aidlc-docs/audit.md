@@ -524,3 +524,40 @@ Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響す
 **Context**: 成果物 2 点レビュー待ち。承認後に U-PLT Infrastructure Design へ進む。その後の U-CSS〜U-APP は合本版で進める。
 
 ---
+
+## U-PLT NFR Design Approved + Infrastructure Design Start
+
+**Timestamp**: 2026-04-22T12:50:00Z
+**User Input**: "マージしてください。承認です"
+**AI Actions**:
+1. PR #7 を squash マージ（commit `193595c`）。
+2. aidlc-state.md を「U-PLT NFR Design 承認済み」「U-PLT Infrastructure Design 進行中」に更新。
+3. `aidlc-docs/construction/plans/U-PLT-infrastructure-design-plan.md` を 7 件の計画質問付きで生成（GCP プロジェクト / リージョン / CI 認証 / IaC / Docker / 命名規約 / 環境変数注入）。成果物として `construction/shared-infrastructure.md` を新規生成する旨を記載。
+
+**Context**: U-PLT Infrastructure Design 計画質問の回答待ち。
+
+---
+
+## U-PLT Infrastructure Design Answered + Artifacts Generated
+
+**Timestamp**: 2026-04-22T13:10:00Z
+**User Input**: "done"
+**User Answers**:
+- Q1 [X + 自由記述: "prodだけ良いです。overseas-safety-map"] — 単一 prod プロジェクト（dev なし、MVP 割り切り）
+- Q2 [A] — `asia-northeast1` 単一
+- Q3 [A] — Workload Identity Federation
+- Q4 [A] → Q7 の示唆で **B に昇格**（Terraform で Cloud Run も管理）
+- Q5 [A] — distroless マルチステージ + Artifact Registry
+- Q6 [A] — 統一命名規約
+- Q7 [X + 質問: "terraform からコンテナに割り当てできないですか？"] — **できる**（`env.value_source.secret_key_ref`）。NFR Design LC-06 Secret Resolver は実装保留、Terraform でバインディング管理に一本化。
+
+**AI Actions**:
+1. Q7 を踏まえて Q4 を [A]→[B] に実質昇格（Terraform で Cloud Run 含む全リソース管理）と解釈。NFR Design LC-06 `Secret Resolver` は **deferred** として残し、実装せずに Terraform + Cloud Run の `env.value_source` で代替する方針。
+2. `construction/U-PLT/infrastructure-design/infrastructure-design.md` を生成: GCP プロジェクト / リージョン / WIF / SA / Terraform 構成 / Docker / 命名規約 / Env・Secret 注入 / 観測性 / コスト / Bootstrap / 受け入れ基準。
+3. `construction/U-PLT/infrastructure-design/deployment-architecture.md` を生成: Mermaid 全体図、CI/CD フロー、Runtime シーケンス、Scaling 方針、Secrets 一覧、ロールバック、CI パイプライン詳細。
+4. `construction/shared-infrastructure.md` を生成: 全 Unit 共有の基盤規約（GCP / IAM / Terraform / Docker / 命名 / Secrets / 観測性 / Pub/Sub / CI/CD / コストガードレール）、各 Unit の Infrastructure Design が参照する入口に設定。
+5. aidlc-state.md を「U-PLT Infrastructure Design 承認待ち」に更新。
+
+**Context**: 成果物 3 点レビュー待ち。承認後に U-PLT Code Generation へ進む。
+
+---
