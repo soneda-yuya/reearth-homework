@@ -759,3 +759,30 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成してレビュー依頼。承認後に U-CSS Code Generation へ進む。
 
 ---
+
+## U-CSS Infra Design Merged + Code Generation Plan Start
+
+**Timestamp**: 2026-04-22T21:10:00Z
+**User Input**: "良さそうありがとう。マージして次に行きましょう。" → "A"（Code Generation は AI-DLC 標準の 2 PR 構成で進める選択）
+**AI Actions**:
+1. PR #23 を squash マージ（commit `d5a1947`）。U-CSS Infra Design 完了。
+2. Feature branch `feature/u-css-code-gen-plan` を切って `construction/plans/U-CSS-code-generation-plan.md` を作成。
+3. Phase 1-7 のチェックリスト形式で計画:
+   - Phase 1: Domain（FieldType enum / SchemaDefinition / Validate / SafetyMapSchema 19 Field / PBT）
+   - Phase 2: Application（SchemaApplier Port / EnsureSchemaUseCase / Drift / FakeApplier で 4 シナリオ）
+   - Phase 3: Infrastructure（cmsx に Project/Model/Field HTTP メソッド拡張 / CMSSchemaApplier / httptest）
+   - Phase 4: Composition Root（cmd/cmsmigrate/main.go 拡張）
+   - Phase 5: Terraform（max_retries=0 + description + tfvars.example）
+   - Phase 6: Docs（code/summary.md + README 追記）
+   - Phase 7: CI 緑化 + カバレッジ 85%+
+4. 設計判断 Question A-F を用意:
+   - A: reearth-cms API 仕様の調査深度（最小 vs 事前徹底 vs 抽象化）
+   - B: テストカバレッジ目標（層別 vs 一律 85%+ vs 質的）
+   - C: PR 分割（1 PR vs 2 PR vs 3 PR）
+   - D: SafetyMapSchema の description（最小 vs 詳細 vs 空）
+   - E: Observability 注入方針（Constructor vs Context vs 混合）
+   - F: Retry 配置（cmsx.Client 内 vs application 層 vs 両方）
+
+**Context**: PR を作成して計画レビュー依頼。回答後に Phase 1-7 の実装へ進む。
+
+---
