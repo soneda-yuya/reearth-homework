@@ -3,35 +3,45 @@ resource "google_service_account" "ci_deployer" {
   display_name = "GitHub Actions deployer"
 }
 
-# Project-scoped roles the CI deployer needs to apply Terraform and push
-# container images.
-resource "google_project_iam_member" "ci_run_admin" {
-  project = var.project_id
-  role    = "roles/run.admin"
-  member  = "serviceAccount:${google_service_account.ci_deployer.email}"
+# Project-scoped roles the CI deployer needs to apply Terraform.
+#
+# The scope is broad because CI-driven apply touches every resource the state
+# manages (APIs, IAM, WIF, Firestore, Cloud Run, Scheduler, Pub/Sub, Secrets,
+# Artifact Registry). A future hardening is to split the state into a
+# bootstrap tier (human-only) and a runtime tier (CI-only), and trim CI's
+# permissions to the runtime tier; tracked as a follow-up.
+locals {
+  ci_deployer_roles = [
+    # Service enablement (google_project_service)
+    "roles/serviceusage.serviceUsageAdmin",
+
+    # IAM policy management (google_project_iam_member bindings)
+    "roles/resourcemanager.projectIamAdmin",
+
+    # Service accounts (runtime SAs + impersonation)
+    "roles/iam.serviceAccountAdmin",
+    "roles/iam.serviceAccountUser",
+
+    # Workload Identity Federation
+    "roles/iam.workloadIdentityPoolAdmin",
+
+    # Compute + deployment
+    "roles/run.admin",
+    "roles/artifactregistry.writer",
+
+    # Data + messaging
+    "roles/secretmanager.admin",
+    "roles/pubsub.editor",
+    "roles/datastore.owner",
+    "roles/cloudscheduler.admin",
+  ]
 }
 
-resource "google_project_iam_member" "ci_ar_writer" {
-  project = var.project_id
-  role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${google_service_account.ci_deployer.email}"
-}
+resource "google_project_iam_member" "ci_deployer_roles" {
+  for_each = toset(local.ci_deployer_roles)
 
-resource "google_project_iam_member" "ci_sa_user" {
   project = var.project_id
-  role    = "roles/iam.serviceAccountUser"
-  member  = "serviceAccount:${google_service_account.ci_deployer.email}"
-}
-
-resource "google_project_iam_member" "ci_secret_admin" {
-  project = var.project_id
-  role    = "roles/secretmanager.admin"
-  member  = "serviceAccount:${google_service_account.ci_deployer.email}"
-}
-
-resource "google_project_iam_member" "ci_pubsub_editor" {
-  project = var.project_id
-  role    = "roles/pubsub.editor"
+  role    = each.value
   member  = "serviceAccount:${google_service_account.ci_deployer.email}"
 }
 
