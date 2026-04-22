@@ -9,6 +9,13 @@ permissions:
   contents: read
   id-token: write  # required for Workload Identity Federation
 
+# Serialise deploys per environment so consecutive main pushes never race on
+# the terraform state lock or push overlapping image tags. We queue (rather
+# than cancel) so every successful merge still produces a deploy.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
 env:
   PROJECT_ID: overseas-safety-map
   REGION: asia-northeast1
