@@ -1,0 +1,24 @@
+name: 'Setup Go toolchain'
+description: 'Install Go, buf, golangci-lint and govulncheck.'
+
+inputs:
+  go-version:
+    description: 'Go toolchain version'
+    required: false
+    default: '1.26.x'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: true
+
+    - uses: bufbuild/buf-setup-action@v1
+      with:
+        version: '1.47.2'
+
+    - name: Install govulncheck
+      shell: bash
+      run: go install golang.org/x/vuln/cmd/govulncheck@latest

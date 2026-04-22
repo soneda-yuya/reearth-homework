@@ -587,3 +587,45 @@ Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響す
 **Context**: Code Generation Plan を作成完了。ユーザー承認待ち（Part 1 のゲート）。承認後に Part 2（Generation）を Step 1 から順次実行する。
 
 ---
+
+## U-PLT Code Generation Plan Approved + PR A Merged
+
+**Timestamp**: 2026-04-22T14:00:00Z
+**User Input**: "1で"（2 PR 分割で OK）→ Phase 1〜7 実行 → Copilot 6 件対応 → "マージしました。次に行きましょう。"
+**AI Actions**:
+1. Phase 1〜7 を実装。全 44 ファイル、go build / test / race / vet すべて緑（カバレッジ 67%）。
+2. PR #9 作成 → Copilot 6 件レビュー対応（buf.gen.yaml out path / 未使用 interceptors 削除 / retry normalize / PrettyPrint を dev-only / validate 説明修正 / redact test 強化）→ 6 件すべて Resolve → merge（commit `6f82bc8`）。
+
+**Context**: U-PLT Code Generation PR A 完了。続けて PR B（Phase 8〜10: Terraform + CI/CD + README）に着手。
+
+---
+
+## U-PLT Code Generation PR B (Phase 8-10) Generated
+
+**Timestamp**: 2026-04-22T14:30:00Z
+**AI Actions**:
+1. **Phase 8: Terraform 17 ファイル**
+   - versions.tf / main.tf / variables.tf / outputs.tf
+   - apis.tf（16 API 有効化）
+   - artifact_registry.tf
+   - secret_manager.tf（3 Secret + IAM bindings）
+   - pubsub.tf（topic + subscription + DLQ + invoker IAM）
+   - service_accounts.tf（5 SA）+ wif.tf + iam.tf
+   - cloud_run_{bff,ingestion,notifier,setup}.tf（env + value_source による Secret 注入）
+   - cloud_scheduler.tf（5 分毎 ingestion 起動）
+   - firestore.tf
+   - terraform/README.md
+2. **Phase 9: CI/CD 6 ファイル**
+   - `.github/actions/setup-go/action.yml`（composite action、Go + buf + govulncheck 一括インストール。reusable workflow より再利用性高い）
+   - `.github/workflows/ci.yml`（PR/push で lint + test + race + vuln + docker build matrix）
+   - `.github/workflows/deploy.yml`（main push で docker push + terraform apply、WIF 認証）
+   - `.github/workflows/terraform-plan.yml`（terraform/ PR で plan を PR コメント）
+   - `.github/workflows/setup-go.yml`（composite action のスモークテスト、手動実行）
+   - `.github/dependabot.yml`（gomod daily + actions/docker weekly、OTel / Google Cloud グループ化）
+3. **Phase 10: ドキュメント**
+   - `README.md`（アーキテクチャ図 / 技術 / Getting Started / Deployment / Layout / AI-DLC 索引 / ライセンス）
+   - `aidlc-docs/construction/U-PLT/code/summary.md`（Code Generation の全成果物一覧 + NFR カバレッジ + 次 Unit への申し送り）
+
+**Context**: PR B 作成してレビュー依頼。承認後に U-PLT Build and Test へ進む（Unit 最終サブステージ）。
+
+---

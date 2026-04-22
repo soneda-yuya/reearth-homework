@@ -1,0 +1,86 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: Go (lint / vet / test / vuln)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-go
+
+      - name: gofmt check
+        run: |
+          diff <(gofmt -s -d .) <(echo -n) || {
+            echo "::error::gofmt -s produced diffs"
+            exit 1
+          }
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+      - name: go test (race + coverage)
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: govulncheck
+        run: govulncheck ./...
+
+      - name: Coverage summary
+        run: go tool cover -func=coverage.out | tail -1
+
+  proto:
+    name: Proto (buf lint / breaking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # buf breaking needs main for comparison
+
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          version: '1.47.2'
+
+      - name: buf lint
+        run: buf lint
+
+      - name: buf breaking
+        if: github.event_name == 'pull_request'
+        run: buf breaking --against "https://github.com/${{ github.repository }}.git#branch=main"
+
+  docker:
+    name: Docker build (all deployables)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        deployable: [ingestion, bff, notifier, setup]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          build-args: |
+            DEPLOYABLE=${{ matrix.deployable }}
+          tags: ${{ matrix.deployable }}:ci
+          cache-from: type=gha,scope=${{ matrix.deployable }}
+          cache-to: type=gha,scope=${{ matrix.deployable }},mode=max
