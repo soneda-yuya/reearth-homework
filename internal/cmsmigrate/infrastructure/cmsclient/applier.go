@@ -1,0 +1,116 @@
+// Package cmsclient is the infrastructure adapter that fulfils
+// application.SchemaApplier by delegating to cmsx.Client. The translation is
+// mostly mechanical; it lives here instead of in the use case so domain code
+// stays free of HTTP-shaped types.
+package cmsclient
+
+import (
+	"context"
+
+	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/application"
+	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/reearth-homework/internal/platform/cmsx"
+)
+
+// SchemaClient is the subset of cmsx.Client the adapter needs. Keeping it as
+// an interface lets tests substitute an in-memory stub without spinning up a
+// real HTTP server.
+type SchemaClient interface {
+	FindProjectByAlias(ctx context.Context, alias string) (*cmsx.ProjectDTO, error)
+	CreateProject(ctx context.Context, def domain.ProjectDefinition) (*cmsx.ProjectDTO, error)
+
+	FindModelByAlias(ctx context.Context, projectID, alias string) (*cmsx.ModelDTO, error)
+	CreateModel(ctx context.Context, projectID string, def domain.ModelDefinition) (*cmsx.ModelDTO, error)
+
+	FindFieldByAlias(ctx context.Context, modelID, alias string) (*cmsx.FieldDTO, error)
+	CreateField(ctx context.Context, modelID string, def domain.FieldDefinition) (*cmsx.FieldDTO, error)
+}
+
+// CMSSchemaApplier implements application.SchemaApplier against cmsx.Client.
+type CMSSchemaApplier struct {
+	client SchemaClient
+}
+
+// New constructs a CMSSchemaApplier backed by a real cmsx.Client; tests
+// typically use NewWithClient to inject a stub.
+func New(c *cmsx.Client) *CMSSchemaApplier {
+	return &CMSSchemaApplier{client: c}
+}
+
+// NewWithClient accepts any SchemaClient, mainly for testing.
+func NewWithClient(c SchemaClient) *CMSSchemaApplier {
+	return &CMSSchemaApplier{client: c}
+}
+
+// FindProject forwards to cmsx and translates the DTO into the
+// application-layer shape.
+func (a *CMSSchemaApplier) FindProject(ctx context.Context, alias string) (*application.RemoteProject, error) {
+	dto, err := a.client.FindProjectByAlias(ctx, alias)
+	if err != nil || dto == nil {
+		return nil, err
+	}
+	return projectDTOTo(dto), nil
+}
+
+func (a *CMSSchemaApplier) CreateProject(ctx context.Context, def domain.ProjectDefinition) (*application.RemoteProject, error) {
+	dto, err := a.client.CreateProject(ctx, def)
+	if err != nil {
+		return nil, err
+	}
+	return projectDTOTo(dto), nil
+}
+
+func (a *CMSSchemaApplier) FindModel(ctx context.Context, projectID, alias string) (*application.RemoteModel, error) {
+	dto, err := a.client.FindModelByAlias(ctx, projectID, alias)
+	if err != nil || dto == nil {
+		return nil, err
+	}
+	return modelDTOTo(dto), nil
+}
+
+func (a *CMSSchemaApplier) CreateModel(ctx context.Context, projectID string, def domain.ModelDefinition) (*application.RemoteModel, error) {
+	dto, err := a.client.CreateModel(ctx, projectID, def)
+	if err != nil {
+		return nil, err
+	}
+	return modelDTOTo(dto), nil
+}
+
+func (a *CMSSchemaApplier) FindField(ctx context.Context, modelID, alias string) (*application.RemoteField, error) {
+	dto, err := a.client.FindFieldByAlias(ctx, modelID, alias)
+	if err != nil || dto == nil {
+		return nil, err
+	}
+	return fieldDTOTo(dto), nil
+}
+
+func (a *CMSSchemaApplier) CreateField(ctx context.Context, modelID string, def domain.FieldDefinition) (*application.RemoteField, error) {
+	dto, err := a.client.CreateField(ctx, modelID, def)
+	if err != nil {
+		return nil, err
+	}
+	return fieldDTOTo(dto), nil
+}
+
+func projectDTOTo(dto *cmsx.ProjectDTO) *application.RemoteProject {
+	return &application.RemoteProject{ID: dto.ID, Alias: dto.Alias, Name: dto.Name}
+}
+
+func modelDTOTo(dto *cmsx.ModelDTO) *application.RemoteModel {
+	out := &application.RemoteModel{ID: dto.ID, Alias: dto.Alias, Name: dto.Name}
+	for _, f := range dto.Fields {
+		out.Fields = append(out.Fields, *fieldDTOTo(&f))
+	}
+	return out
+}
+
+func fieldDTOTo(dto *cmsx.FieldDTO) *application.RemoteField {
+	return &application.RemoteField{
+		ID:       dto.ID,
+		Alias:    dto.Alias,
+		Type:     dto.ToDomainType(),
+		Required: dto.Required,
+		Unique:   dto.Unique,
+		Multiple: dto.Multiple,
+	}
+}

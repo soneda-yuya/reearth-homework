@@ -33,11 +33,13 @@ variable "mofa_base_url" {
 }
 
 variable "cms_base_url" {
-  type = string
+  description = "Base URL of the external reearth-cms instance (e.g. https://cms.example.com). The CMS itself is managed outside this project."
+  type        = string
 }
 
 variable "cms_workspace_id" {
-  type = string
+  description = "Workspace ID in the external reearth-cms where the SafetyIncident schema is applied."
+  type        = string
 }
 
 # ---- Image tags (CI overrides these per deploy) ----------------------------

@@ -39,3 +39,7 @@ terraform/environments/*/plan.txt
 # Coverage
 coverage.out
 coverage.html
+
+# pgregory.net/rapid writes reproducer files under testdata/rapid on failure.
+# They are tied to a specific run's seed and should not be tracked.
+**/testdata/rapid/

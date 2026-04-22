@@ -1,0 +1,20 @@
+# Example tfvars for the prod environment.
+# Copy to prod.tfvars (gitignored) and fill in the actual values.
+#
+# NOTE: tfstate bucket + WIF + GitHub secrets are assumed to be provisioned
+# already. See aidlc-docs/construction/shared-infrastructure.md for bootstrap
+# steps.
+
+# `gcloud projects describe overseas-safety-map --format='value(projectNumber)'`
+project_number = "000000000000"
+
+# External reearth-cms (Q5 [A]). CMS 本体は本プロジェクト外で管理される前提。
+cms_base_url     = "https://cms.example.com"
+cms_workspace_id = "wkp_XXXXXXXXXXXX"
+
+# Image tags are normally overridden by CI per deploy; uncomment for manual
+# apply against a specific build.
+# bff_image_tag        = "latest"
+# ingestion_image_tag  = "latest"
+# notifier_image_tag   = "latest"
+# cmsmigrate_image_tag = "latest"

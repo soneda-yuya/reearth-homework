@@ -786,3 +786,37 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成して計画レビュー依頼。回答後に Phase 1-7 の実装へ進む。
 
 ---
+
+## U-CSS Code Gen Plan Merged + Implementation
+
+**Timestamp**: 2026-04-22T22:00:00Z
+**User Input**: "done"（plan Q A-F 全 A で回答、マージ後に実装）
+**AI Actions**:
+1. plan に最終確認欄を埋めて commit → PR #24 auto-merge → main 同期（`bf242e1`）。
+2. Feature branch `feature/u-css-code` で Phase 1-7 を順次実装。
+3. Phase 1 (Domain): FieldType enum + SchemaDefinition + Validate R1-R7 + SafetyMapSchema 19 Field + PBT (rapid)。PBT で「model alias は kebab-case / field alias は snake_case」の差異を生成器で見落としたバグを反証 → 生成器を修正。
+4. Phase 2 (Application): SchemaApplier Port + EnsureSchemaUseCase + Drift + FakeApplier で 5 シナリオ（初回 / 再実行 / Model 既存 / fail-fast / Validate fail）。
+5. Phase 3 (Infrastructure): cmsx を拡張（Project/Model/Field の CRUD HTTP メソッド、GET は retry・POST は一度）、httptest で 200/201/401/404/409/503 + retry 動作検証、CMSSchemaApplier 実装。
+6. Phase 4 (Composition Root): cmd/cmsmigrate/main.go を envconfig + DI + usecase.Execute に置き換え、fail-fast os.Exit(1)。
+7. Phase 5 (Terraform): max_retries=0、variables description、prod.tfvars.example。`terraform init -backend=false` + `terraform validate` + `terraform fmt` 全緑。
+8. Phase 6 (Docs): U-CSS/code/summary.md + README に cmsmigrate セクション追記 + Layout に cmsmigrate BC。
+9. Phase 7 (CI 緑化): `go test ./... -race` pass、`go vet`、`gofmt -s`、`golangci-lint run`、`govulncheck`（残存は stdlib 1.26 CVE で CI の check-latest で解消）、`buf lint` / `buf breaking` 全緑。
+10. aidlc-state.md 更新（Code Gen 実装完了、PR レビュー待ち）。
+
+**Coverage（Q B [A] 目標達成）**:
+- domain: 95.7% (target 95%)
+- application: 93.3% (target 90%)
+- infrastructure/cmsclient: 87.5% (target 70%)
+- 全体: 92.9% (target 85%)
+
+**Implementation Decisions (all A)**:
+- Q A: API 仕様は最小限の調査、実 API 誤りは Build and Test で修正
+- Q B: 層別カバレッジ目標を達成
+- Q C: 1 PR にまとめる
+- Q D: description は MVP で最小限（Project/Model 短文、Field は空）
+- Q E: Constructor Injection（test しやすさ）
+- Q F: Retry は cmsx.Client 内（GET のみ、POST は一度）
+
+**Context**: PR を作成してレビュー依頼。承認後 U-CSS Build and Test へ進む。
+
+---
