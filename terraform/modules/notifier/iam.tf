@@ -10,12 +10,16 @@ resource "google_project_iam_member" "fcm" {
   member  = "serviceAccount:${google_service_account.runtime.email}"
 }
 
-# Pub/Sub needs to invoke the notifier service when pushing messages.
-resource "google_cloud_run_v2_service_iam_member" "pubsub_invoker" {
+# Pub/Sub push delivers with an OIDC token signed by the runtime SA
+# (see subscription.tf push_config.oidc_token). Cloud Run checks that the
+# token subject — not the Pub/Sub service agent — holds roles/run.invoker.
+# Granting run.invoker to the runtime SA is therefore the correct way to
+# authorise Pub/Sub push.
+resource "google_cloud_run_v2_service_iam_member" "runtime_invoker" {
   location = google_cloud_run_v2_service.notifier.location
   name     = google_cloud_run_v2_service.notifier.name
   role     = "roles/run.invoker"
-  member   = "serviceAccount:service-${var.project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+  member   = "serviceAccount:${google_service_account.runtime.email}"
 }
 
 # Pub/Sub push with oidc_token requires the Pub/Sub service agent to be able
