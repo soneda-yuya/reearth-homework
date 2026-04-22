@@ -26,3 +26,12 @@ resource "google_service_account_iam_member" "pubsub_token_creator" {
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = "serviceAccount:service-${var.project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
+
+# Dead-lettering requires the Pub/Sub service agent to be allowed to publish
+# to the DLQ topic. Without this, the subscription creation succeeds but
+# messages exceeding max_delivery_attempts silently fail to route to the DLQ.
+resource "google_pubsub_topic_iam_member" "dlq_publisher" {
+  topic  = var.new_arrival_dlq_id
+  role   = "roles/pubsub.publisher"
+  member = "serviceAccount:service-${var.project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}

@@ -33,3 +33,8 @@ variable "cms_integration_token_secret_name" {
   description = "Short name of the Secret Manager secret holding the CMS integration token."
   type        = string
 }
+
+variable "cms_integration_token_secret_id" {
+  description = "Fully-qualified Secret Manager resource id for cms-integration-token (granted to bff runtime)."
+  type        = string
+}

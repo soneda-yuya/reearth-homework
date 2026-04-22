@@ -40,4 +40,13 @@ resource "google_cloud_scheduler_job" "ingestion" {
       scope                 = "https://www.googleapis.com/auth/cloud-platform"
     }
   }
+
+  # The IAM bindings below must land before the first scheduled tick; they are
+  # not in the attribute graph so Terraform would otherwise create resources
+  # in parallel and the first tick(s) could error with permission / token
+  # generation failures.
+  depends_on = [
+    google_cloud_run_v2_job_iam_member.scheduler_invokes_ingestion,
+    google_service_account_iam_member.scheduler_agent_token_creator,
+  ]
 }
