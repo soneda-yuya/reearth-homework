@@ -629,3 +629,30 @@ Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響す
 **Context**: PR B 作成してレビュー依頼。承認後に U-PLT Build and Test へ進む（Unit 最終サブステージ）。
 
 ---
+
+## U-PLT Code Generation PR B Merged + Build and Test Start
+
+**Timestamp**: 2026-04-22T17:50:00Z
+**User Input**: "マージしました。次に行きましょう。商人です"（「承認です」のタイポ）
+**AI Actions**:
+1. main を pull（PR #10 `c408eb2` merge 済み確認）。
+2. U-PLT Build and Test 成果物を Minimal に生成:
+   - `construction/build-and-test/build-instructions.md` — ローカルビルド + CI ビルドの手順、Makefile ターゲット、トラブルシューティング
+   - `construction/build-and-test/unit-test-instructions.md` — テスト実行方法、PBT、パッケージ別カバレッジ実績と目標、CI との整合
+   - `construction/build-and-test/integration-test-instructions.md` — U-PLT 単独では疎通確認のみ、将来の統合テスト（U-CSS 以降）のロードマップ
+   - `construction/build-and-test/build-and-test-summary.md` — Build 全緑、Unit test 全 pass、Coverage 67.4%（80% 未達は後続 Unit で底上げ）、Security（govulncheck + Dependabot + WIF）pass、Integration 疎通 OK
+3. aidlc-state.md を「U-PLT Build and Test 承認待ち」に更新。
+
+## Copilot 総コメント対応ログ（参考）
+PR #10 では Copilot から計 **35 件** の review comment を受領し、全て対応・Resolve 済み:
+- 1-8 弾: gcloud --quiet / Pub/Sub IAM / WIF 条件 / govulncheck pin / 変数整理 / etc.
+- 9 弾目: ci-deployer の refresh/apply 必要 role 6 種追加
+- Scope 説明: PR description に proto rename と OTel upgrade の経緯を追記
+- CI-critical fix: OTel v1.33→v1.43 (GO-2026-4394) + Go 1.26.x check-latest (stdlib CVE)
+- Terraform 再編: modules + environments/prod の 2 層構成（将来 dev 追加に備える）
+- 名称整合: terraform-plan.yml → terraform-validate.yml （実態に即す）
+- tfstate_bucket: variable → local（backend は static のため）
+
+**Context**: U-PLT Build and Test 承認待ち。承認後に U-CSS へ遷移し、合本化 Minimal 版で進める。
+
+---
