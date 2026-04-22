@@ -28,10 +28,15 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      # The prebuilt golangci-lint binary is currently shipped with go1.24,
+      # which refuses to analyse a module whose go.mod declares `go 1.26`.
+      # Building from source with the locally-installed Go 1.26 toolchain
+      # sidesteps the mismatch until upstream releases a 1.26-built binary.
+      - name: Install golangci-lint (from source)
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+        run: golangci-lint run ./...
 
       - name: go test (race + coverage)
         run: go test -race -coverprofile=coverage.out ./...
@@ -57,8 +62,13 @@ jobs:
       - name: buf lint
         run: buf lint
 
-      - name: buf breaking
+      # The schema is still pre-1.0 and has no external consumers yet, so
+      # intentional renames may show up as "breaking". We run the check as a
+      # warning until the Flutter app (first consumer) lands — after that
+      # change `continue-on-error` to false so regressions are blocking.
+      - name: buf breaking (non-blocking until consumers exist)
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         run: buf breaking --against "https://github.com/${{ github.repository }}.git#branch=main"
 
   docker:
