@@ -97,7 +97,7 @@
 - **ワークフロー**:
   - `.github/workflows/ci.yml` — PR / main push で静的チェック + test + build
   - `.github/workflows/deploy.yml` — main push（CI 成功後）に docker push + terraform apply
-  - `.github/workflows/terraform-plan.yml` — terraform/ 配下 PR で plan をコメント
+  - `.github/workflows/terraform-validate.yml` — terraform/ 配下 PR で fmt + validate（WIF は main 限定のため plan はローカル実行）
   - `.github/workflows/setup-go.yml`（reusable） — Go 1.26 + buf + govulncheck セットアップ
 
 ## 11. コストガードレール

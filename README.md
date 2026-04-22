@@ -116,7 +116,7 @@ proto/v1/            Connect + Pub/Sub スキーマ（Go/Dart の生成ソース
 gen/go/v1/           buf generate 出力
 terraform/           GCP インフラ IaC
 .github/
-  workflows/         CI / deploy / terraform-plan / setup-go smoke
+  workflows/         CI / deploy / terraform-validate / setup-go smoke
   actions/setup-go/  composite action（Go + buf + govulncheck インストール）
 aidlc-docs/          AI-DLC 設計ドキュメント
 ```
@@ -143,4 +143,4 @@ aidlc-docs/          AI-DLC 設計ドキュメント
 ## Contributing
 
 PR は CI（`ci.yml`）が緑になってから main に merge してください。
-Terraform の変更は `terraform-plan.yml` が PR で `terraform fmt -check` + `terraform validate` を実行します。WIF 権限は main ブランチに限定しているため CI では `terraform plan` は走りません。本物の diff が必要なときは `gcloud auth application-default login` のうえでローカル `terraform plan` を実行してください。
+Terraform の変更は `terraform-validate.yml` が PR で `terraform fmt -check` + `terraform validate` を実行します。WIF 権限は main ブランチに限定しているため CI では `terraform plan` は走りません。本物の diff が必要なときは `gcloud auth application-default login` のうえでローカル `terraform plan` を実行してください。

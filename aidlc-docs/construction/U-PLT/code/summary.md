@@ -42,7 +42,7 @@ PR B の当初構成から、**module × environment の 2 層構成** にリフ
 | `.github/actions/setup-go/action.yml` | 再利用可能な composite action（Go 1.26.x check-latest + buf + govulncheck） |
 | `.github/workflows/ci.yml` | PR/push で gofmt / vet / golangci-lint (go install) / test -race -cover / govulncheck / buf lint & breaking / docker build matrix |
 | `.github/workflows/deploy.yml` | main push で docker build + push + terraform apply（SHA は非 matrix な meta job で算出） |
-| `.github/workflows/terraform-plan.yml` | terraform/ の PR で fmt + validate（WIF は main 限定のため plan はローカル実行） |
+| `.github/workflows/terraform-validate.yml` | terraform/ の PR で fmt + validate（WIF は main 限定のため plan はローカル実行） |
 | `.github/workflows/setup-go.yml` | composite action のスモークテスト（手動実行） |
 | `.github/dependabot.yml` | gomod daily / github-actions weekly / docker weekly、OTel・Google Cloud を group 化 |
 
@@ -67,7 +67,7 @@ make vuln            # clean
 ### CI 確認（本 PR）
 
 - `ci.yml`: PR 作成で自動起動
-- `terraform-plan.yml`: terraform/ 配下の変更時に fmt + validate を実行（WIF は main 限定のため plan はローカル実行）
+- `terraform-validate.yml`: terraform/ 配下の変更時に fmt + validate を実行（WIF は main 限定のため plan はローカル実行）
 - main merge 後に `deploy.yml` が docker push + terraform apply
 
 ### GitHub Secrets に登録が必要な値（本 PR 後に設定）

@@ -50,7 +50,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
 # (i.e. post-merge deploys) may impersonate the high-privilege ci-deployer
 # service account. PR workflows cannot acquire credentials through this
 # binding, so a compromised branch cannot invoke deploy.yml or apply
-# Terraform changes. PR terraform-plan runs `fmt` / `validate` without
+# Terraform changes. PR terraform-validate runs `fmt` / `validate` without
 # cloud credentials; a real plan is expected to be run locally with ADC.
 #
 # iam_member (not iam_binding) so other manually added members at the same

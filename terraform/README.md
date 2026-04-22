@@ -60,7 +60,7 @@ main ブランチに merge されると GitHub Actions が:
 1. `docker build + push` を 4 deployable で実行
 2. `terraform apply -var='bff_image_tag=<git-sha>' ...` で各 Cloud Run の image tag を更新
 
-`.github/workflows/deploy.yml` と `terraform-plan.yml` は `working-directory: terraform/environments/prod` で動作します。
+`.github/workflows/deploy.yml` と `terraform-validate.yml` は `working-directory: terraform/environments/prod` で動作します。`terraform-validate.yml` は PR で fmt + validate のみ（WIF が main 限定のため plan はローカル実行）。
 
 ## Dev 環境を追加したくなったら
 

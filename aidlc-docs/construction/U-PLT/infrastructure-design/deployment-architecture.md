@@ -281,7 +281,7 @@ gcloud run services update-traffic bff \
 |---|---|---|
 | `ci.yml` | PR push / main push | 静的チェック + test + docker build |
 | `deploy.yml` | main push（`ci.yml` 成功後） | docker push + terraform apply |
-| `terraform-plan.yml` | terraform/ 配下変更の PR | `terraform plan` を PR コメントに投稿 |
+| `terraform-validate.yml` | terraform/ 配下変更の PR | `terraform fmt -check` + `validate`（WIF が main 限定のため plan はローカル実行） |
 
 reusable workflow として `ci/setup-go.yml`（Go 1.26 + buf + govulncheck セットアップ）を切り出し、各ワークフローで呼び出す。
 
