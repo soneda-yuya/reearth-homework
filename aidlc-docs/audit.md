@@ -418,3 +418,44 @@ Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響す
 **Context**: Units Generation 承認待ち。承認後に Construction フェーズ（U-PLT から Functional Design → NFR Req → NFR Design → Infra Design → Code Gen → Build & Test の1サイクル）に進む。
 
 ---
+
+## Units Generation Approved + Construction Phase Start (U-PLT)
+
+**Timestamp**: 2026-04-22T10:50:00Z
+**User Input**: "マージしてください。承認です。"
+**AI Actions**:
+1. PR #4 を `gh pr merge 4 --squash --delete-branch` で main にマージ（commit `6a180d2`）。
+2. aidlc-state.md を「Construction フェーズ / U-PLT 進行中」に更新。Unit 単位のループ構造を明示。
+3. U-PLT の Functional Design の進め方について、U-PLT が純インフラ基盤でビジネスロジックがほぼ無いため、スコープについてユーザー確認を行う方針。
+
+**Context**: U-PLT Functional Design の進め方をユーザーに確認中。
+
+---
+
+## U-PLT Functional Design Scope Decision
+
+**Timestamp**: 2026-04-22T11:00:00Z
+**User Input**: "Aで"
+**Decision**: Minimal Functional Design for U-PLT（4項目のみ: proto 命名／ログスキーマ／エラー分類／Config 規約）。ビジネスロジックが無いため、通常の Functional Design ではなく軽量版を採用。
+**AI Actions**:
+1. `aidlc-docs/construction/plans/U-PLT-functional-design-plan.md` を4件の計画質問付きで生成。
+2. aidlc-state.md を「U-PLT Minimal Functional Design 計画質問作成済み、回答待ち」に更新。
+
+**Context**: U-PLT Minimal Functional Design の回答待ち。回答後に business-logic-model / business-rules / domain-entities の 3 成果物を生成する。
+
+---
+
+## U-PLT Minimal Functional Design Answered + Artifacts Generated
+
+**Timestamp**: 2026-04-22T11:15:00Z
+**User Input**: "全部推奨で"
+**User Answers**: Q1 [A] / Q2 [A] / Q3 [A] / Q4 [A]（すべて推奨）
+**AI Actions**:
+1. `construction/U-PLT/functional-design/business-logic-model.md` を生成。proto スキーマ（common / safetymap / pubsub の3ファイル）、ログスキーマ（共通属性＋ドメイン属性＋エラー属性）、エラー分類（7 Kind + Connect Code マッピング）、Config 規約（プレフィックス・envconfig・Secret Manager 方針）を宣言的に定義。
+2. `construction/U-PLT/functional-design/business-rules.md` を生成。proto バリデーション規約（5項目）、エラーラップ規約（%w 使いどころ・禁止事項・チェーン深さ）、ログ出力ルール（必須属性自動付与・ドメイン属性付与・サンプリング・PII 扱い）、Config 読み込みルール（起動順序・フェイルファスト）、proto 互換性ルール（許容／禁止変更、`buf breaking` CI）を定義。
+3. `construction/U-PLT/functional-design/domain-entities.md` を生成。proto ↔ Go 型マッピング、AppError 構造体、Config 構造体、Clock/Observability/Platform SDK factory の公開型、U-PLT で一次生成するリポジトリ構造（✅ マーク）を定義。
+4. aidlc-state.md を「U-PLT 機能設計 承認待ち」に更新。
+
+**Context**: 成果物3点レビュー待ち。承認後に U-PLT NFR Requirements へ進む。
+
+---
