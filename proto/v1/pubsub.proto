@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package overseasmap.v1;
+
+option go_package = "github.com/soneda-yuya/reearth-homework/gen/go/v1;overseasmapv1";
+
+import "google/protobuf/timestamp.proto";
+
+// NewArrivalEvent is published by ingestion after a new SafetyIncident has
+// been stored. notifier subscribes and fans out FCM pushes to matching users.
+message NewArrivalEvent {
+  string key_cd = 1;
+  string country_cd = 2;
+  string area_cd = 3;
+  string info_type = 4;
+  string title = 5;
+  google.protobuf.Timestamp leave_date = 6;
+  google.protobuf.Timestamp occurred_at = 7;
+}

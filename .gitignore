@@ -1,0 +1,37 @@
+# Go build artifacts
+/bin/
+/dist/
+*.test
+*.out
+*.prof
+
+# Generated protobuf Go (committed but protect against stale intermediates)
+gen/**/*.pb.go.tmp
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*-service-account.json
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/*.tfplan
+terraform/crash.log
+
+# Coverage
+coverage.out
+coverage.html

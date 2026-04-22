@@ -561,3 +561,29 @@ Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響す
 **Context**: 成果物 3 点レビュー待ち。承認後に U-PLT Code Generation へ進む。
 
 ---
+
+## U-PLT Infrastructure Design Approved + Code Generation Planning
+
+**Timestamp**: 2026-04-22T13:30:00Z
+**User Input**: "マージしましょう。承認です。"
+**AI Actions**:
+1. PR #8 を squash マージ（commit `298310f`）。
+2. aidlc-state.md を「U-PLT Infrastructure Design 承認済み」「U-PLT Code Generation Planning 中」に更新。
+3. `aidlc-docs/construction/plans/U-PLT-code-generation-plan.md` を **58 ステップ / 10 Phase / 2 PR 分割** の詳細計画で作成:
+   - Phase 1: プロジェクト初期化（go.mod, ディレクトリ, .gitignore, Makefile）
+   - Phase 2: Shared（errs / clock / validate + PBT）
+   - Phase 3: Platform（config / observability / retry / ratelimit / connectserver）
+   - Phase 4: SDK Factory（cmsx / firebasex / pubsubx / mapboxx）
+   - Phase 5: Proto（common / safetymap / pubsub + buf 設定）
+   - Phase 6: cmd/* 雛形
+   - Phase 7: ビルド成果物（Dockerfile / Makefile）
+   - **→ PR A 提出・マージ**
+   - Phase 8: Terraform 13 ファイル
+   - Phase 9: CI/CD（4 workflow + dependabot）
+   - Phase 10: ドキュメント（README + code summary）
+   - **→ PR B 提出・マージ**
+4. Story traceability、Expected Outcomes、Risk & Mitigations、Test Strategy を記載。
+
+**Context**: Code Generation Plan を作成完了。ユーザー承認待ち（Part 1 のゲート）。承認後に Part 2（Generation）を Step 1 から順次実行する。
+
+---

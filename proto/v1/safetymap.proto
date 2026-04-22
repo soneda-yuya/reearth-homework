@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+package overseasmap.v1;
+
+option go_package = "github.com/soneda-yuya/reearth-homework/gen/go/v1;overseasmapv1";
+
+import "google/protobuf/timestamp.proto";
+import "v1/common.proto";
+
+// SafetyIncident is one processed MOFA mail item with geocoded location.
+message SafetyIncident {
+  string key_cd = 1;
+  string info_type = 2;
+  string info_name = 3;
+  google.protobuf.Timestamp leave_date = 4;
+  string title = 5;
+  string lead = 6;
+  string main_text = 7;
+  string info_url = 8;
+  string koukan_cd = 9;
+  string koukan_name = 10;
+  string area_cd = 11;
+  string area_name = 12;
+  string country_cd = 13;
+  string country_name = 14;
+  string extracted_location = 15;
+  Point geometry = 16;
+  GeocodeSource geocode_source = 17;
+  google.protobuf.Timestamp ingested_at = 18;
+  google.protobuf.Timestamp updated_at = 19;
+}
+
+message SafetyIncidentFilter {
+  string area_cd = 1;
+  string country_cd = 2;
+  repeated string info_types = 3;
+  google.protobuf.Timestamp leave_from = 4;
+  google.protobuf.Timestamp leave_to = 5;
+  int32 limit = 6;
+  string cursor = 7;
+}
+
+message ListSafetyIncidentsRequest { SafetyIncidentFilter filter = 1; }
+message ListSafetyIncidentsResponse {
+  repeated SafetyIncident items = 1;
+  string next_cursor = 2;
+  int32 total_hint = 3;
+}
+
+message GetSafetyIncidentRequest { string key_cd = 1; }
+message GetSafetyIncidentResponse { SafetyIncident item = 1; }
+
+message SearchSafetyIncidentsRequest { SafetyIncidentFilter filter = 1; }
+message SearchSafetyIncidentsResponse {
+  repeated SafetyIncident items = 1;
+  string next_cursor = 2;
+}
+
+message ListNearbyRequest {
+  Point center = 1;
+  double radius_km = 2;
+  int32 limit = 3;
+}
+message ListNearbyResponse { repeated SafetyIncident items = 1; }
+
+message GeoJSONRequest { SafetyIncidentFilter filter = 1; }
+message GeoJSONResponse { bytes geojson = 1; }
+
+service SafetyIncidentService {
+  rpc ListSafetyIncidents(ListSafetyIncidentsRequest) returns (ListSafetyIncidentsResponse);
+  rpc GetSafetyIncident(GetSafetyIncidentRequest) returns (GetSafetyIncidentResponse);
+  rpc SearchSafetyIncidents(SearchSafetyIncidentsRequest) returns (SearchSafetyIncidentsResponse);
+  rpc ListNearby(ListNearbyRequest) returns (ListNearbyResponse);
+  rpc GetSafetyIncidentsAsGeoJSON(GeoJSONRequest) returns (GeoJSONResponse);
+}
+
+// ---- CrimeMap ----
+message CrimeMapFilter {
+  google.protobuf.Timestamp leave_from = 1;
+  google.protobuf.Timestamp leave_to = 2;
+}
+
+message CountryChoropleth {
+  string country_cd = 1;
+  string country_name = 2;
+  int32 count = 3;
+  string color = 4;
+}
+
+message HeatmapPoint {
+  Point location = 1;
+  double weight = 2;
+}
+
+message GetChoroplethRequest { CrimeMapFilter filter = 1; }
+message GetChoroplethResponse {
+  repeated CountryChoropleth items = 1;
+  int32 total = 2;
+}
+
+message GetHeatmapRequest { CrimeMapFilter filter = 1; }
+message GetHeatmapResponse {
+  repeated HeatmapPoint points = 1;
+  int32 excluded_fallback = 2;
+}
+
+service CrimeMapService {
+  rpc GetChoropleth(GetChoroplethRequest) returns (GetChoroplethResponse);
+  rpc GetHeatmap(GetHeatmapRequest) returns (GetHeatmapResponse);
+}
+
+// ---- UserProfile ----
+message NotificationPreference {
+  bool enabled = 1;
+  repeated string target_country_cds = 2;
+  repeated string info_types = 3;
+}
+
+message UserProfile {
+  string uid = 1;
+  repeated string favorite_country_cds = 2;
+  NotificationPreference notification_preference = 3;
+  int32 fcm_token_count = 4;
+}
+
+message GetProfileRequest {}
+message GetProfileResponse { UserProfile profile = 1; }
+
+message ToggleFavoriteCountryRequest { string country_cd = 1; }
+message ToggleFavoriteCountryResponse { UserProfile profile = 1; }
+
+message UpdateNotificationPreferenceRequest { NotificationPreference preference = 1; }
+message UpdateNotificationPreferenceResponse {}
+
+message RegisterFcmTokenRequest {
+  string token = 1;
+  string device_id = 2;
+}
+message RegisterFcmTokenResponse {}
+
+service UserProfileService {
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+  rpc ToggleFavoriteCountry(ToggleFavoriteCountryRequest) returns (ToggleFavoriteCountryResponse);
+  rpc UpdateNotificationPreference(UpdateNotificationPreferenceRequest) returns (UpdateNotificationPreferenceResponse);
+  rpc RegisterFcmToken(RegisterFcmTokenRequest) returns (RegisterFcmTokenResponse);
+}

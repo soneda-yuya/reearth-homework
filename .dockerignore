@@ -1,0 +1,14 @@
+.git
+.github
+.gitignore
+.dockerignore
+aidlc-docs
+.aidlc-rule-details
+terraform
+*.md
+.env
+.env.*
+coverage.out
+coverage.html
+bin/
+dist/
