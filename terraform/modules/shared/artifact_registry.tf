@@ -1,5 +1,4 @@
 resource "google_artifact_registry_repository" "app" {
-  provider      = google
   location      = var.region
   repository_id = "app"
   format        = "DOCKER"

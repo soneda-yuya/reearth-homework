@@ -5,7 +5,7 @@ resource "google_cloud_run_v2_service" "notifier" {
   ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
   template {
-    service_account = google_service_account.notifier_runtime.email
+    service_account = google_service_account.runtime.email
 
     scaling {
       min_instance_count = 0
@@ -13,7 +13,7 @@ resource "google_cloud_run_v2_service" "notifier" {
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.app.repository_id}/notifier:${var.notifier_image_tag}"
+      image = "${var.artifact_registry_url}/notifier:${var.image_tag}"
 
       ports {
         container_port = 8080
@@ -25,7 +25,7 @@ resource "google_cloud_run_v2_service" "notifier" {
       }
       env {
         name  = "PLATFORM_ENV"
-        value = "prod"
+        value = var.env
       }
       env {
         name  = "PLATFORM_GCP_PROJECT_ID"
@@ -76,6 +76,4 @@ resource "google_cloud_run_v2_service" "notifier" {
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
     percent = 100
   }
-
-  depends_on = [google_project_service.enabled]
 }

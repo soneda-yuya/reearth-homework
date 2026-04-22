@@ -1,4 +1,3 @@
-# Dedicated SA so Cloud Scheduler can invoke the ingestion Cloud Run Job.
 resource "google_service_account" "scheduler_invoker" {
   account_id   = "scheduler-invoker"
   display_name = "Cloud Scheduler invoker"
@@ -11,11 +10,11 @@ resource "google_cloud_run_v2_job_iam_member" "scheduler_invokes_ingestion" {
   member   = "serviceAccount:${google_service_account.scheduler_invoker.email}"
 }
 
-resource "google_cloud_scheduler_job" "ingestion_new_arrival_5min" {
+resource "google_cloud_scheduler_job" "ingestion" {
   name        = "ingestion-new-arrival-5min"
-  description = "Run ingestion Cloud Run Job every 5 minutes"
-  schedule    = "*/5 * * * *"
-  time_zone   = "Asia/Tokyo"
+  description = "Run the ingestion Cloud Run Job on a fixed cadence."
+  schedule    = var.schedule
+  time_zone   = var.schedule_time_zone
   region      = var.region
 
   retry_config {
@@ -31,6 +30,4 @@ resource "google_cloud_scheduler_job" "ingestion_new_arrival_5min" {
       scope                 = "https://www.googleapis.com/auth/cloud-platform"
     }
   }
-
-  depends_on = [google_project_service.enabled]
 }

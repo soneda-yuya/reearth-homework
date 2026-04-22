@@ -5,7 +5,7 @@ resource "google_cloud_run_v2_service" "bff" {
   ingress = "INGRESS_TRAFFIC_ALL"
 
   template {
-    service_account = google_service_account.bff_runtime.email
+    service_account = google_service_account.runtime.email
 
     scaling {
       min_instance_count = 0
@@ -13,7 +13,7 @@ resource "google_cloud_run_v2_service" "bff" {
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.app.repository_id}/bff:${var.bff_image_tag}"
+      image = "${var.artifact_registry_url}/bff:${var.image_tag}"
 
       ports {
         container_port = 8080
@@ -25,7 +25,7 @@ resource "google_cloud_run_v2_service" "bff" {
       }
       env {
         name  = "PLATFORM_ENV"
-        value = "prod"
+        value = var.env
       }
       env {
         name  = "PLATFORM_GCP_PROJECT_ID"
@@ -51,7 +51,7 @@ resource "google_cloud_run_v2_service" "bff" {
         name = "BFF_CMS_INTEGRATION_TOKEN"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.cms_integration_token.secret_id
+            secret  = var.cms_integration_token_secret_name
             version = "latest"
           }
         }
@@ -90,15 +90,12 @@ resource "google_cloud_run_v2_service" "bff" {
     percent = 100
   }
 
-  depends_on = [
-    google_project_service.enabled,
-    google_secret_manager_secret_iam_member.bff_cms,
-  ]
+  depends_on = [google_secret_manager_secret_iam_member.bff_cms]
 }
 
-# Allow unauthenticated access (Flutter app authenticates via Firebase ID Token
-# in the Authorization header, validated by the AuthInterceptor).
-resource "google_cloud_run_v2_service_iam_member" "bff_invoker" {
+# Flutter apps reach the service over the public URL; they present a Firebase
+# ID Token that the application's AuthInterceptor verifies.
+resource "google_cloud_run_v2_service_iam_member" "invoker" {
   location = google_cloud_run_v2_service.bff.location
   name     = google_cloud_run_v2_service.bff.name
   role     = "roles/run.invoker"

@@ -17,7 +17,6 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.actor"      = "assertion.actor"
   }
 
-  # Only tokens from our repo may exchange.
   attribute_condition = "assertion.repository == '${var.github_repository}'"
 
   oidc {

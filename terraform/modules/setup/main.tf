@@ -4,11 +4,11 @@ resource "google_cloud_run_v2_job" "setup" {
 
   template {
     template {
-      service_account = google_service_account.setup_runtime.email
+      service_account = google_service_account.runtime.email
       timeout         = "120s"
 
       containers {
-        image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.app.repository_id}/setup:${var.setup_image_tag}"
+        image = "${var.artifact_registry_url}/setup:${var.image_tag}"
 
         env {
           name  = "PLATFORM_SERVICE_NAME"
@@ -16,7 +16,7 @@ resource "google_cloud_run_v2_job" "setup" {
         }
         env {
           name  = "PLATFORM_ENV"
-          value = "prod"
+          value = var.env
         }
         env {
           name  = "PLATFORM_GCP_PROJECT_ID"
@@ -38,7 +38,7 @@ resource "google_cloud_run_v2_job" "setup" {
           name = "SETUP_CMS_INTEGRATION_TOKEN"
           value_source {
             secret_key_ref {
-              secret  = google_secret_manager_secret.cms_integration_token.secret_id
+              secret  = var.cms_integration_token_secret_name
               version = "latest"
             }
           }
@@ -54,8 +54,5 @@ resource "google_cloud_run_v2_job" "setup" {
     }
   }
 
-  depends_on = [
-    google_project_service.enabled,
-    google_secret_manager_secret_iam_member.setup_cms,
-  ]
+  depends_on = [google_secret_manager_secret_iam_member.cms]
 }

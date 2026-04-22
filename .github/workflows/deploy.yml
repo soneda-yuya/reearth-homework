@@ -73,11 +73,11 @@ jobs:
           terraform_version: '~> 1.9'
 
       - name: Terraform init
-        working-directory: terraform
+        working-directory: terraform/environments/prod
         run: terraform init
 
       - name: Terraform apply (rolling image tags)
-        working-directory: terraform
+        working-directory: terraform/environments/prod
         env:
           TAG: ${{ needs.build-push.outputs.git_sha }}
         run: |
