@@ -3,7 +3,7 @@ description: 'Install Go, buf, golangci-lint and govulncheck.'
 
 inputs:
   go-version:
-    description: 'Go toolchain version'
+    description: 'Go toolchain version. Defaults to 1.26.x + check-latest so stdlib CVE fixes in 1.26.y are picked up automatically.'
     required: false
     default: '1.26.x'
 
@@ -13,6 +13,7 @@ runs:
     - uses: actions/setup-go@v5
       with:
         go-version: ${{ inputs.go-version }}
+        check-latest: true
         cache: true
 
     - uses: bufbuild/buf-setup-action@v1
