@@ -16,19 +16,27 @@ env:
   REGISTRY_REPO: app
 
 jobs:
+  # SHA is derived once so every matrix shard uses the same image tag and the
+  # terraform-apply job can consume it without aggregating matrix outputs
+  # (matrix job outputs are unreliable).
+  meta:
+    name: Derive image tag
+    runs-on: ubuntu-latest
+    outputs:
+      git_sha: ${{ steps.derive.outputs.sha }}
+    steps:
+      - id: derive
+        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
   build-push:
     name: Build + push (${{ matrix.deployable }})
+    needs: meta
     runs-on: ubuntu-latest
     strategy:
       matrix:
         deployable: [ingestion, bff, notifier, setup]
-    outputs:
-      git_sha: ${{ steps.meta.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-
-      - id: meta
-        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - uses: google-github-actions/auth@v2
         with:
@@ -38,7 +46,7 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker auth for Artifact Registry
-        run: gcloud auth configure-docker ${{ env.REGISTRY }}
+        run: gcloud auth configure-docker --quiet ${{ env.REGISTRY }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -51,14 +59,14 @@ jobs:
           build-args: |
             DEPLOYABLE=${{ matrix.deployable }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REGISTRY_REPO }}/${{ matrix.deployable }}:${{ steps.meta.outputs.sha }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REGISTRY_REPO }}/${{ matrix.deployable }}:${{ needs.meta.outputs.git_sha }}
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REGISTRY_REPO }}/${{ matrix.deployable }}:latest
           cache-from: type=gha,scope=${{ matrix.deployable }}
           cache-to: type=gha,scope=${{ matrix.deployable }},mode=max
 
   terraform-apply:
     name: Terraform apply (image tags)
-    needs: build-push
+    needs: [meta, build-push]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -74,14 +82,14 @@ jobs:
 
       - name: Terraform init
         working-directory: terraform/environments/prod
-        run: terraform init
+        run: terraform init -input=false
 
       - name: Terraform apply (rolling image tags)
         working-directory: terraform/environments/prod
         env:
-          TAG: ${{ needs.build-push.outputs.git_sha }}
+          TAG: ${{ needs.meta.outputs.git_sha }}
         run: |
-          terraform apply -auto-approve \
+          terraform apply -auto-approve -input=false \
             -var="project_number=${{ secrets.GCP_PROJECT_NUMBER }}" \
             -var="cms_base_url=${{ secrets.CMS_BASE_URL }}" \
             -var="cms_workspace_id=${{ secrets.CMS_WORKSPACE_ID }}" \

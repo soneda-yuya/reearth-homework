@@ -17,3 +17,12 @@ resource "google_cloud_run_v2_service_iam_member" "pubsub_invoker" {
   role     = "roles/run.invoker"
   member   = "serviceAccount:service-${var.project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
+
+# Pub/Sub push with oidc_token requires the Pub/Sub service agent to be able
+# to mint identity tokens as the runtime SA. Without this, deliveries fail
+# and messages eventually go to the DLQ.
+resource "google_service_account_iam_member" "pubsub_token_creator" {
+  service_account_id = google_service_account.runtime.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:service-${var.project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}

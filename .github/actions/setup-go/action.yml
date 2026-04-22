@@ -1,5 +1,5 @@
 name: 'Setup Go toolchain'
-description: 'Install Go, buf, golangci-lint and govulncheck.'
+description: 'Install Go, buf, and govulncheck. (golangci-lint is installed from source inside ci.yml because its prebuilt binary trails Go 1.26.)'
 
 inputs:
   go-version:

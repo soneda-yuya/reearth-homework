@@ -7,19 +7,21 @@ on:
 
 permissions:
   contents: read
-  id-token: write
-  pull-requests: write  # post plan summary as a comment
 
-env:
-  PROJECT_ID: overseas-safety-map
+# Note: we intentionally do NOT run `terraform plan` from pull-request
+# workflows. The ci-deployer service account only allows impersonation from
+# workflows running on the main branch (see terraform/modules/shared/wif.tf),
+# which blocks PR OIDC tokens. Running fmt + validate here gives the same
+# early signal for drift / syntax errors without requiring a read-only SA or
+# relaxing the WIF binding. Run `terraform plan` locally (gcloud ADC) for a
+# real diff before opening the PR.
 
 jobs:
-  plan:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # fmt and validate don't need cloud credentials; always run them.
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '~> 1.9'
@@ -28,74 +30,10 @@ jobs:
         working-directory: terraform
         run: terraform fmt -check -recursive
 
-      # The cloud-authenticated steps below require the WIF secret. Before the
-      # GCP project is bootstrapped the secret is absent; in that case we exit
-      # green with a warning so the gating doesn't block unrelated PRs.
-      - name: Check WIF configuration
-        id: check
-        env:
-          WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
-        run: |
-          if [ -z "$WIF_PROVIDER" ]; then
-            echo "::warning::GCP_WIF_PROVIDER secret is not set; skipping cloud-authenticated plan. Populate GitHub Secrets after terraform bootstrap."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - uses: google-github-actions/auth@v2
-        if: steps.check.outputs.ready == 'true'
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-          service_account: ci-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
-
-      - name: Terraform init
-        if: steps.check.outputs.ready == 'true'
+      - name: Terraform init (backend disabled)
         working-directory: terraform/environments/prod
-        run: terraform init -backend=true
+        run: terraform init -backend=false -input=false
 
       - name: Terraform validate
-        if: steps.check.outputs.ready == 'true'
         working-directory: terraform/environments/prod
         run: terraform validate
-
-      - name: Terraform plan
-        id: plan
-        if: steps.check.outputs.ready == 'true'
-        working-directory: terraform/environments/prod
-        run: |
-          set +e
-          terraform plan -no-color -out=tfplan \
-            -var="project_number=${{ secrets.GCP_PROJECT_NUMBER }}" \
-            -var="cms_base_url=${{ secrets.CMS_BASE_URL }}" \
-            -var="cms_workspace_id=${{ secrets.CMS_WORKSPACE_ID }}" \
-            > plan.txt
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
-
-      - name: Post plan summary to PR
-        if: steps.check.outputs.ready == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            let plan = fs.readFileSync('terraform/environments/prod/plan.txt', 'utf8');
-            if (plan.length > 60000) {
-              plan = plan.slice(0, 60000) + '\n\n...(truncated)...';
-            }
-            const body = [
-              '### Terraform plan',
-              '',
-              '```terraform',
-              plan,
-              '```',
-            ].join('\n');
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body,
-            });
-
-      - name: Fail if plan errored
-        if: steps.check.outputs.ready == 'true' && steps.plan.outputs.exit_code != '0' && steps.plan.outputs.exit_code != '2'
-        run: exit 1
