@@ -459,3 +459,36 @@ Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響す
 **Context**: 成果物3点レビュー待ち。承認後に U-PLT NFR Requirements へ進む。
 
 ---
+
+## U-PLT Functional Design Approved + NFR Requirements Start
+
+**Timestamp**: 2026-04-22T11:35:00Z
+**User Input**: "マージしてください。承認です"
+**AI Actions**:
+1. PR #5 を squash マージ（commit `b5ff9a5`）。
+2. aidlc-state.md を「U-PLT Functional Design 承認済み」「U-PLT NFR Requirements 進行中」に更新。
+3. `aidlc-docs/construction/plans/U-PLT-nfr-requirements-plan.md` を 5 件の計画質問付きで生成（依存バージョン方針 / PBT 対象 / カバレッジ+CI 時間目標 / 脆弱性スキャン+Secrets / OTel exporter）。
+
+**Context**: U-PLT NFR Requirements 計画質問の回答待ち。回答後に nfr-requirements.md と tech-stack-decisions.md の 2 成果物を生成する。
+
+---
+
+## U-PLT NFR Requirements Answered + Artifacts Generated
+
+**Timestamp**: 2026-04-22T11:55:00Z
+**User Input**: "sone"（"done" のタイポ）
+**User Answers**:
+- Q1 [A + 自由記述: "go1.26 があります"] — 推奨 A を採用、Go バージョンは 1.26（最新安定）を採用（AI 推奨の "1.24 系" は古かったため訂正）
+- Q2 [A,B,D] — PBT 対象: errs ラウンドトリップ / proto↔domain 変換 / validate 境界値
+- Q3 [A] — カバレッジ 80%+（errs/validate/config は 90%+）、CI 5 分以内
+- Q4 [A] — govulncheck + Dependabot + GitHub Secrets → GCP Secret Manager
+- Q5 [A] — stdout/GCP exporter 切替
+
+**AI Actions**:
+1. `construction/U-PLT/nfr-requirements/nfr-requirements.md` を生成: 6 領域（性能/セキュリティ/信頼性/観測性/テスト/保守性）× 計 22 件の NFR-PLT-* を定義。
+2. `construction/U-PLT/nfr-requirements/tech-stack-decisions.md` を生成: Go 1.26、Connect、slog、OpenTelemetry、envconfig、Firebase Admin v4、Pub/Sub、Secret Manager、rapid（PBT）、golangci-lint、govulncheck、Dependabot、GitHub Actions を確定。不採用選択肢の根拠も記録。
+3. aidlc-state.md を「U-PLT NFR Requirements 承認待ち」に更新。
+
+**Context**: 成果物2点レビュー待ち。承認後に U-PLT NFR Design へ進む。
+
+---
