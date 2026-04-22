@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        deployable: [ingestion, bff, notifier, setup]
+        deployable: [ingestion, bff, notifier, cmsmigrate]
     steps:
       - uses: actions/checkout@v4
 

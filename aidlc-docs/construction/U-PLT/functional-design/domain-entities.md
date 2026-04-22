@@ -265,7 +265,7 @@ reearth-homework/
 │   ├── ingestion/    (空の main.go、U-ING で実装)
 │   ├── bff/          (空の main.go、U-BFF で実装)
 │   ├── notifier/     (空の main.go、U-NTF で実装)
-│   └── setup/        (空の main.go、U-CSS で実装)
+│   └── cmsmigrate/   (空の main.go、U-CSS で実装)
 ├── internal/
 │   ├── platform/
 │   │   ├── config/          ✅ U-PLT

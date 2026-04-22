@@ -52,7 +52,7 @@ Application Design Plan の質問に基づく確定事項:
 | C-08 | CrimeMapAggregator | 犯罪マップ集計（カロプレス/ヒートマップ） | `internal/crimemap` |
 | C-09 | IngestionApp | ingestion main | `cmd/ingestion` |
 | C-10 | BffApp | BFF main | `cmd/bff` |
-| C-11 | SetupApp | CMS セットアップ main | `cmd/setup` |
+| C-11 | SetupApp | CMS セットアップ main | `cmd/cmsmigrate` |
 | C-12 | NotifierApp | 通知配信 main | `cmd/notifier` |
 | C-13 | Observability | slog + OTel Metrics/Traces | `internal/observability` |
 
@@ -103,7 +103,7 @@ ListSafetyIncidents / GetSafetyIncidentDetail / ListNearby / SearchSafetyInciden
 | `safetyincident` | **Core** | MOFA 取り込み・LLM 抽出・ジオコード・CMS 永続化・読み取り / 検索。サブドメイン `crimemap` を内包。 |
 | `notification` | Supporting | 新着 Domain Event を受けて対象ユーザーへ FCM 配信。 |
 | `user` | Supporting | Firebase Auth 検証 + Firestore 上のユーザープロファイル（お気に入り・通知設定・FCM トークン）。 |
-| `cmssetup` | Supporting | reearth-cms の Project / Model / Field 冪等作成。 |
+| `cmsmigrate` | Supporting | reearth-cms の Project / Model / Field 冪等作成。 |
 
 #### ディレクトリ構造
 ```
@@ -112,7 +112,7 @@ ListSafetyIncidents / GetSafetyIncidentDetail / ListNearby / SearchSafetyInciden
 │   ├── ingestion/main.go
 │   ├── bff/main.go
 │   ├── notifier/main.go
-│   └── setup/main.go
+│   └── cmsmigrate/main.go
 │
 ├── internal/
 │   ├── safetyincident/                   # 🟩 Core Bounded Context
@@ -205,7 +205,7 @@ ListSafetyIncidents / GetSafetyIncidentDetail / ListNearby / SearchSafetyInciden
 │   │       └── firebaseauth/
 │   │           └── verifier.go           # AuthVerifier 実装
 │   │
-│   ├── cmssetup/                         # 🟦 Supporting Bounded Context
+│   ├── cmsmigrate/                         # 🟦 Supporting Bounded Context
 │   │   ├── domain/
 │   │   │   └── schema_definition.go      # 安全情報 Model / Field の宣言的定義
 │   │   ├── application/

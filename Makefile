@@ -1,6 +1,6 @@
 .PHONY: help setup deps test test-race cover vet lint vuln build build-all proto proto-lint proto-breaking clean
 
-DEPLOYABLES := ingestion bff notifier setup
+DEPLOYABLES := ingestion bff notifier cmsmigrate
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'

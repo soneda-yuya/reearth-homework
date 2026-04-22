@@ -76,13 +76,13 @@ module "notifier" {
   new_arrival_dlq_id    = module.shared.new_arrival_dlq_id
 }
 
-module "setup" {
-  source = "../../modules/setup"
+module "cmsmigrate" {
+  source = "../../modules/cmsmigrate"
 
   project_id                        = var.project_id
   region                            = var.region
   env                               = local.env
-  image_tag                         = var.setup_image_tag
+  image_tag                         = var.cmsmigrate_image_tag
   artifact_registry_url             = module.shared.artifact_registry_url
   cms_base_url                      = var.cms_base_url
   cms_workspace_id                  = var.cms_workspace_id

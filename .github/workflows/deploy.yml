@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        deployable: [ingestion, bff, notifier, setup]
+        deployable: [ingestion, bff, notifier, cmsmigrate]
     steps:
       - uses: actions/checkout@v4
 
@@ -103,4 +103,4 @@ jobs:
             -var="bff_image_tag=${TAG}" \
             -var="ingestion_image_tag=${TAG}" \
             -var="notifier_image_tag=${TAG}" \
-            -var="setup_image_tag=${TAG}"
+            -var="cmsmigrate_image_tag=${TAG}"

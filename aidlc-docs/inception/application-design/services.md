@@ -111,17 +111,17 @@ RegisterFcmTokenUseCase.Execute(ctx, Uid, FcmToken) error
 **依存 Port**: 各 UseCase は **同 Context の domain Port のみ** に依存する（Context 越境は `interfaces/rpc` の組み立てで吸収）。
 
 
-### S-04: `EnsureSchemaUseCase`（`cmssetup.application`）
+### S-04: `EnsureSchemaUseCase`（`cmsmigrate.application`）
 
 **責務**: `SchemaDefinition`（宣言的定義）を reearth-cms に冪等適用する。
 
 **公開インターフェイス**:
 ```go
-package cmssetupapp
+package cmsmigrateapp
 
 type EnsureSchemaUseCase struct {
     applier *cmsapplier.SchemaApplier
-    def     cmssetup.SchemaDefinition
+    def     cmsmigrate.SchemaDefinition
 }
 func (u *EnsureSchemaUseCase) Execute(ctx context.Context) error
 ```
@@ -132,7 +132,7 @@ func (u *EnsureSchemaUseCase) Execute(ctx context.Context) error
 3. Field が不足していれば追加
 4. 既存と一致すれば no-op
 
-**起動元**: `internal/interfaces/job.SetupRunner` → `cmd/setup/main.go`
+**起動元**: `internal/interfaces/job.SetupRunner` → `cmd/cmsmigrate/main.go`
 
 ---
 

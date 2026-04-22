@@ -68,15 +68,15 @@
 - `SafetyIncident` Model と必要フィールド（FR-CMS-05）を定義し、CMS UI 相当の初期化作業を自動化する。
 
 ### 含むパッケージ／成果物
-- `internal/cmssetup/domain`（`SchemaDefinition` / `ModelDefinition` / `FieldDefinition`）
-- `internal/cmssetup/application`（`EnsureSchemaUseCase`）
-- `internal/cmssetup/infrastructure/cms`（`SchemaApplier`）
+- `internal/cmsmigrate/domain`（`SchemaDefinition` / `ModelDefinition` / `FieldDefinition`）
+- `internal/cmsmigrate/application`（`EnsureSchemaUseCase`）
+- `internal/cmsmigrate/infrastructure/cms`（`SchemaApplier`）
 - `internal/interfaces/job/setup_runner.go`
-- `cmd/setup/main.go`
-- `deploy/setup/`（Dockerfile + Cloud Run Job デプロイ定義）
+- `cmd/cmsmigrate/main.go`
+- `deploy/cmsmigrate/`（Dockerfile + Cloud Run Job デプロイ定義）
 
 ### 完了条件
-- `cmd/setup` をローカル / Cloud Run Job で実行すると CMS に Project / Model / Field が存在する（既存なら no-op）
+- `cmd/cmsmigrate` をローカル / Cloud Run Job で実行すると CMS に Project / Model / Field が存在する（既存なら no-op）
 - ユニットテストで `SchemaApplier` の冪等性を検証
 - Infrastructure Design 時に GitHub Actions から Cloud Run Job 起動手順を整備
 

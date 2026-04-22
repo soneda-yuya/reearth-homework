@@ -24,7 +24,7 @@ graph TB
     subgraph GCP["GCP Project: overseas-safety-map (asia-northeast1)"]
         subgraph IAM["IAM / Identity"]
             WIF["Workload Identity<br/>Pool + Provider"]
-            SAs["Service Accounts:<br/>ci-deployer,<br/>ingestion-runtime,<br/>bff-runtime,<br/>notifier-runtime,<br/>setup-runtime"]
+            SAs["Service Accounts:<br/>ci-deployer,<br/>ingestion-runtime,<br/>bff-runtime,<br/>notifier-runtime,<br/>cmsmigrate-runtime"]
         end
 
         subgraph Build["Build / Registry"]
@@ -164,7 +164,7 @@ GitHub Actions (deploy)
     - terraform apply -var="bff_image_tag=${git-sha}" \
                       -var="ingestion_image_tag=${git-sha}" \
                       -var="notifier_image_tag=${git-sha}" \
-                      -var="setup_image_tag=${git-sha}"
+                      -var="cmsmigrate_image_tag=${git-sha}"
     - Cloud Run の revision が更新される（無停止デプロイ）
     ↓
 デプロイ完了 → Slack / Email 通知（optional）
@@ -237,7 +237,7 @@ ingestion が Pub/Sub "safety-incident.new-arrival" に publish
 |---|---|---|---|
 | `ingestion-claude-api-key` | Claude API 呼び出し | ingestion-runtime | 手動（Anthropic console） |
 | `ingestion-mapbox-api-key` | Mapbox Geocoding | ingestion-runtime | 手動（Mapbox dashboard） |
-| `cms-integration-token` | reearth-cms Integration API（共有） | ingestion / bff / setup | 手動（CMS UI） |
+| `cms-integration-token` | reearth-cms Integration API（共有） | ingestion / bff / cmsmigrate | 手動（CMS UI） |
 | `firebase-service-account-json` | Firebase Admin SDK（共有） | bff / notifier | Firebase Console（生成・ダウンロード） |
 
 **Secret の初期値登録**は手動（Terraform では `google_secret_manager_secret` のみ作成、`_secret_version` はコミットしない）:

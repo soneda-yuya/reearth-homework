@@ -6,7 +6,7 @@ U-PLT は基盤 Unit であり、**他 Unit と統合するものが現時点で
 
 | Unit | 統合シナリオ |
 |---|---|
-| U-CSS | `cmd/setup` → reearth-cms Integration API で Project/Model/Field を作成 |
+| U-CSS | `cmd/cmsmigrate` → reearth-cms Integration API で Project/Model/Field を作成 |
 | U-ING | MOFA XML 取得 → Claude → Mapbox → CMS 保存 → Pub/Sub publish |
 | U-BFF | Flutter → Connect RPC → Firebase Auth 検証 → CMS / Firestore 読取 |
 | U-NTF | Pub/Sub push → Firestore 読取 → FCM 配信 |

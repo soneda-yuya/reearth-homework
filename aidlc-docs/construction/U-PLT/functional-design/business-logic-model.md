@@ -219,7 +219,7 @@ message NewArrivalEvent {
 | `level` | string | slog 標準（`DEBUG`/`INFO`/`WARN`/`ERROR`） | `INFO` |
 | `msg` | string | slog 標準 | `incident upserted` |
 | `caller` | string | `file:line` | `ingest_usecase.go:87` |
-| `service` | string | `SERVICE_NAME` env | `ingestion` / `bff` / `notifier` / `setup` |
+| `service` | string | `SERVICE_NAME` env | `ingestion` / `bff` / `notifier` / `cmsmigrate` |
 | `env` | string | `ENV` env | `dev` / `prod` |
 | `trace_id` | string | OpenTelemetry（自動付与） | `4bf92f3577b34da6a3ce929d0e0e4736` |
 | `span_id` | string | OpenTelemetry（自動付与） | `00f067aa0ba902b7` |
@@ -313,7 +313,7 @@ JSON ログとレスポンス DTO で直接表示できるよう `string` 定数
 
 | 環境変数 | 型 | 必須 | 既定値 | 説明 |
 |---|---|:-:|---|---|
-| `PLATFORM_SERVICE_NAME` | string | ✓ | — | `ingestion` / `bff` / `notifier` / `setup` |
+| `PLATFORM_SERVICE_NAME` | string | ✓ | — | `ingestion` / `bff` / `notifier` / `cmsmigrate` |
 | `PLATFORM_ENV` | string | ✓ | — | `dev` / `prod` |
 | `PLATFORM_LOG_LEVEL` | string |  | `INFO` | `DEBUG` / `INFO` / `WARN` / `ERROR` |
 | `PLATFORM_GCP_PROJECT_ID` | string | ✓ | — | Cloud Project ID |
