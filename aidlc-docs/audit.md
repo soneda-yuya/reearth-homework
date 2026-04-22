@@ -383,3 +383,38 @@ Q6/Q7/Q8 空欄 + Q1 の「認証 must」が要件書（FR-APP-05）に影響す
 **Context**: PR #3 のブランチに追加 commit してプッシュする予定。
 
 ---
+
+## Application Design Approved + Units Planning Start
+
+**Timestamp**: 2026-04-22T10:05:00Z
+**User Input**: "マージしました"
+**AI Actions**:
+1. PR #3 が main にマージされていることを確認（commit `c2e1ebe`）、main を pull。
+2. aidlc-state.md を「アプリケーション設計 承認済み」「ユニット計画 進行中」に更新。
+3. `aidlc-docs/inception/plans/unit-of-work-plan.md` を 6 件の計画質問付きで生成（Unit 分割軸 / U-PLT 位置づけ / 実装順序 / デプロイモデル / 体制 / デモ節目）。
+
+**Context**: Units Planning 計画質問の回答待ち。回答後に `unit-of-work.md` / `unit-of-work-dependency.md` / `unit-of-work-story-map.md` を生成する。
+
+---
+
+## Units Plan Answered + Units Generated
+
+**Timestamp**: 2026-04-22T10:20:00Z
+**User Input**: "done"
+**User Answers (verbatim)**:
+- Q1 [A] Deployable 単位（6 Unit: PLT/CSS/ING/BFF/NTF/APP）
+- Q2 [A] U-PLT を Unit 0 として先に
+- Q3 [A] 依存順実装（PLT → CSS → ING → BFF → NTF → APP）
+- Q4 [A] Cloud Run 系で統一
+- Q5 [A] 1 人開発
+- Q6 [A,B,C,E] U-NTF 単独デモ節目は設けず、U-APP 完了時の実機検証に統合
+
+**AI Actions**:
+1. `unit-of-work.md` を生成: 6 Unit（U-PLT / U-CSS / U-ING / U-BFF / U-NTF / U-APP）の責務・成果物・完了条件・デモ節目・依存を明記。Sprint 順序とロードマップも提示。
+2. `unit-of-work-dependency.md` を生成: 6×6 依存マトリクス、依存種別分類（コード import / ランタイム前提 / イベント契約 / API 契約 / 通知契約 / proto 契約）、Mermaid 依存図、並行化余地、Critical Path、ロールバック単位。
+3. `unit-of-work-story-map.md` を生成: 13 MVP Story × 6 Unit の対応表（Primary / Contributing / Supporting 凡例）、Story ごとの寄与詳細、未割当チェック（全 Story 割当済み ✓）、Post-MVP Story の割当方針。
+4. aidlc-state.md を「ユニット計画 承認済み」「ユニット生成 承認待ち」に更新。
+
+**Context**: Units Generation 承認待ち。承認後に Construction フェーズ（U-PLT から Functional Design → NFR Req → NFR Design → Infra Design → Code Gen → Build & Test の1サイクル）に進む。
+
+---
