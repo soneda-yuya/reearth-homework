@@ -143,4 +143,4 @@ aidlc-docs/          AI-DLC 設計ドキュメント
 ## Contributing
 
 PR は CI（`ci.yml`）が緑になってから main に merge してください。
-Terraform の変更は `terraform-plan.yml` が PR に plan をコメントします。
+Terraform の変更は `terraform-plan.yml` が PR で `terraform fmt -check` + `terraform validate` を実行します。WIF 権限は main ブランチに限定しているため CI では `terraform plan` は走りません。本物の diff が必要なときは `gcloud auth application-default login` のうえでローカル `terraform plan` を実行してください。

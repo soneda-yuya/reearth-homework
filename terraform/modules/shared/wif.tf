@@ -26,6 +26,14 @@ resource "google_iam_workload_identity_pool_provider" "github" {
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
+    # Require tokens issued specifically for this WIF audience. GitHub
+    # Actions sets this via google-github-actions/auth's audience input
+    # (default matches the provider resource name). Restricting the
+    # audience narrows the trust boundary so a token minted for an
+    # unrelated GCP provider cannot be replayed here.
+    allowed_audiences = [
+      "https://iam.googleapis.com/projects/${var.project_number}/locations/global/workloadIdentityPools/overseas-safety-map-pool/providers/github-provider",
+    ]
   }
 }
 

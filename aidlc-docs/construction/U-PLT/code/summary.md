@@ -67,7 +67,7 @@ make vuln            # clean
 ### CI 確認（本 PR）
 
 - `ci.yml`: PR 作成で自動起動
-- `terraform-plan.yml`: terraform/ 配下の変更時に PR へ plan コメント
+- `terraform-plan.yml`: terraform/ 配下の変更時に fmt + validate を実行（WIF は main 限定のため plan はローカル実行）
 - main merge 後に `deploy.yml` が docker push + terraform apply
 
 ### GitHub Secrets に登録が必要な値（本 PR 後に設定）

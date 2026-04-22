@@ -10,6 +10,16 @@ resource "google_cloud_run_v2_job_iam_member" "scheduler_invokes_ingestion" {
   member   = "serviceAccount:${google_service_account.scheduler_invoker.email}"
 }
 
+# Cloud Scheduler mints an OAuth token as scheduler_invoker on every fire,
+# which requires the Cloud Scheduler service agent to be allowed to
+# impersonate the invoker SA. Without this binding, the first tick fails
+# with a token-generation error.
+resource "google_service_account_iam_member" "scheduler_agent_token_creator" {
+  service_account_id = google_service_account.scheduler_invoker.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:service-${var.project_number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
+}
+
 resource "google_cloud_scheduler_job" "ingestion" {
   name        = "ingestion-new-arrival-5min"
   description = "Run the ingestion Cloud Run Job on a fixed cadence."

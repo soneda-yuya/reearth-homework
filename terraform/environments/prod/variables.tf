@@ -19,6 +19,12 @@ variable "github_repository" {
   default = "soneda-yuya/reearth-homework"
 }
 
+variable "tfstate_bucket" {
+  description = "GCS bucket holding terraform state. Created manually during bootstrap."
+  type        = string
+  default     = "overseas-safety-map-tfstate"
+}
+
 # ---- External configuration ------------------------------------------------
 variable "mofa_base_url" {
   type    = string

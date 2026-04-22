@@ -2,6 +2,11 @@ variable "project_id" {
   type = string
 }
 
+variable "project_number" {
+  description = "GCP project number (numeric). Required to reference the Cloud Scheduler service agent."
+  type        = string
+}
+
 variable "region" {
   type = string
 }

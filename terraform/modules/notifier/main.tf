@@ -2,7 +2,11 @@ resource "google_cloud_run_v2_service" "notifier" {
   name     = "notifier"
   location = var.region
 
-  ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  # Pub/Sub push delivers to the service's public URL, so ingress must allow
+  # external traffic. Access is still restricted by IAM: only the Pub/Sub
+  # service agent holds run.invoker (see iam.tf); unauthenticated callers are
+  # rejected at the Cloud Run invoker check.
+  ingress = "INGRESS_TRAFFIC_ALL"
 
   template {
     service_account = google_service_account.runtime.email

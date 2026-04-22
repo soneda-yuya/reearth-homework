@@ -22,4 +22,6 @@ runs:
 
     - name: Install govulncheck
       shell: bash
-      run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      # Pin to keep CI reproducible. Bump intentionally when upstream releases
+      # add features we want.
+      run: go install golang.org/x/vuln/cmd/govulncheck@v1.1.4

@@ -19,6 +19,7 @@ module "shared" {
   project_number    = var.project_number
   region            = var.region
   github_repository = var.github_repository
+  tfstate_bucket    = var.tfstate_bucket
 }
 
 module "bff" {
@@ -39,6 +40,7 @@ module "ingestion" {
   source = "../../modules/ingestion"
 
   project_id                        = var.project_id
+  project_number                    = var.project_number
   region                            = var.region
   env                               = local.env
   image_tag                         = var.ingestion_image_tag
