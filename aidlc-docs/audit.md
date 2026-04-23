@@ -1033,3 +1033,25 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成してレビュー依頼。承認後 U-NTF (Notifier Unit) へ進む。
 
 ---
+
+## U-ING Build and Test Merged + U-NTF Design Plan Start
+
+**Timestamp**: 2026-04-23T09:00:00Z
+**User Input**: "マージしました" (PR #35 merge)
+**AI Actions**:
+1. PR #35 merge (commit `20dd57f`)。**U-ING Unit 構造上完了**（Design / Infra / Code PR A+B / Build & Test runbook 全て揃い）。
+2. Feature branch `feature/u-ntf-design-plan` を切って `construction/plans/U-NTF-design-plan.md` を作成。
+3. U-NTF 固有の判断ポイント 8 問を用意（U-PLT 共通規約 + U-ING の pubsubx v2、firebasex 本実装化を前提）:
+   - Q1: Pub/Sub 受信方式 (Push 推奨、雛形と整合)
+   - Q2: Dedup 戦略 (Firestore + TTL 24h 推奨 vs Pub/Sub exactly-once)
+   - Q3: 購読者解決 (country_cd + notification.enabled、info_type in-memory filter)
+   - Q4: FCM 配信戦略 (SendMulticast 推奨)
+   - Q5: 無効 token 除去 (同一 Request 内で Firestore ArrayRemove)
+   - Q6: エラーハンドリング / ACK 戦略 (細かい status code 使い分け)
+   - Q7: OTel observability (Span + 6 Metric + phase 属性ログ)
+   - Q8: テスト戦略 (U-CSS / U-ING と同じ層別、SDK mock 困難部分は fake + Build and Test 手動)
+4. aidlc-state.md を「U-NTF Minimal 合本版 計画 Q1-Q8 作成、回答待ち」に更新。U-ING Build and Test を [x] に。
+
+**Context**: PR を作成して計画レビュー依頼。回答後に U-NTF-design.md (合本版) を生成する。
+
+---
