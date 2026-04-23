@@ -5,7 +5,7 @@
 - **プロジェクトタイプ**: グリーンフィールド
 - **開始日**: 2026-04-20T17:55:00Z（アイデア変更のリセット）
 - **現在のフェーズ**: CONSTRUCTION
-- **現在のステージ**: U-ING（Ingestion Unit、Sprint 2）／ Minimal 合本版 — design 本編生成済み、PR レビュー待ち
+- **現在のステージ**: U-ING（Ingestion Unit、Sprint 2）／ Infrastructure Design — 計画 Q1-Q5 作成、回答待ち
 
 ## ワークフロー圧縮方針（2026-04-22 採用）
 **U-CSS 以降の Unit は Functional Design / NFR Requirements / NFR Design を「Minimal 合本版」1 ドキュメントにまとめる**。U-PLT で共通規約を確定したため、各 Unit 固有の内容のみを簡潔に記述する。Infrastructure Design / Code Generation / Build & Test は従来どおり独立して実施する。
@@ -68,8 +68,8 @@
 
 #### U-ING（進行中、Sprint 2）
 - [x] Minimal 合本版 計画（PR #28 merged 2026-04-23、Q1-Q9 全 A）
-- [ ] Minimal 合本版（Functional + NFR Req + NFR Design）— design 本編生成済み、PR レビュー待ち
-- [ ] インフラ設計（Infrastructure Design）
+- [x] Minimal 合本版 design 本編（PR #29 merged 2026-04-23）
+- [ ] インフラ設計（Infrastructure Design）— 計画 Q1-Q5 作成、回答待ち
 - [ ] コード生成（Code Generation）
 - [ ] ビルドとテスト（Build and Test）
 
