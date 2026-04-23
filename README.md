@@ -231,6 +231,64 @@ set -a; source .env; set +a
 - 同じ `key_cd` の重複 publish は Firestore `notifier_dedup` collection（24h TTL）で自動排除
 - 永続的に無効な FCM token（`registration-token-not-registered` 等）は受信時に Firestore `users.fcm_tokens` から即時 `ArrayRemove` で除去
 
+### bff（Flutter 向け Connect RPC Service）
+
+`cmd/bff` は Flutter アプリが叩く唯一の Connect サーバです。Firebase ID Token を全 RPC 前段の `AuthInterceptor` で検証し、reearth-cms から安全情報を読み取り、Firestore に保存されたユーザプロファイル / 通知設定 / FCM token を管理します。Cloud Run Service として起動し、public URL で待受けます（`invoker = allUsers`、認可は AuthInterceptor 側）。
+
+3 Service / 11 RPC を提供:
+
+- `SafetyIncidentService`: `ListSafetyIncidents` / `GetSafetyIncident` / `SearchSafetyIncidents` / `ListNearby` / `GetSafetyIncidentsAsGeoJSON`
+- `CrimeMapService`: `GetChoropleth` / `GetHeatmap`
+- `UserProfileService`: `GetProfile` / `ToggleFavoriteCountry` / `UpdateNotificationPreference` / `RegisterFcmToken`
+
+**必須 env**:
+
+```
+PLATFORM_SERVICE_NAME=bff
+PLATFORM_ENV=dev
+PLATFORM_GCP_PROJECT_ID=overseas-safety-map
+BFF_CMS_BASE_URL=https://cms.example.com
+BFF_CMS_WORKSPACE_ID=wkp_XXXXXXXX
+BFF_CMS_INTEGRATION_TOKEN=<token>
+```
+
+任意 env（envconfig default で吸収）:
+
+```
+BFF_PORT=8080
+BFF_CMS_PROJECT_ALIAS=overseas-safety-map
+BFF_CMS_MODEL_ALIAS=safety-incident
+BFF_CMS_KEY_FIELD=key_cd
+BFF_USERS_COLLECTION=users
+BFF_SHUTDOWN_GRACE_SECONDS=10
+```
+
+**ローカル実行**:
+
+```bash
+make build-bff
+gcloud auth application-default login   # Firebase Admin SDK で ADC を使う
+set -a; source .env; set +a
+./bin/bff
+```
+
+起動後、Flutter Debug ビルドまたは以下の curl で疎通確認できます:
+
+```bash
+# Firebase Anonymous Auth で ID Token を取得したうえで
+curl -H "Authorization: Bearer ${ID_TOKEN}" \
+     -H "Content-Type: application/json" \
+     -d '{}' \
+     http://localhost:8080/overseasmap.v1.UserProfileService/GetProfile
+```
+
+**prod 運用**:
+
+- 認証: 全 RPC で Firebase ID Token 必須（Anonymous Auth を含む）
+- エラーマッピング: `errs.Kind` → `connect.Code` を `ErrorInterceptor` が自動変換、prod では `Internal` / `Unavailable` のメッセージをマスク
+- 観測性: Cloud Logging の `resource.labels.service_name=bff` と `app.bff.phase` 属性で各段階を追跡
+- スケーリング: `min=0 / max=3 / cpu=1 / memory=512Mi`（U-BFF Infrastructure Design のとおり現状維持）
+
 ## Deployment
 
 GCP プロジェクト `overseas-safety-map`（asia-northeast1）に Cloud Run でデプロイします。詳細は [terraform/README.md](terraform/README.md) を参照。

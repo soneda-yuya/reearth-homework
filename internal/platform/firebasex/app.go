@@ -118,6 +118,20 @@ func (a *App) Auth(ctx context.Context) (*auth.Client, error) {
 	return a.auth, nil
 }
 
+// Prober adapts App to connectserver.Prober. Today it is a stub that only
+// reports "configured"; a future pass can probe Firestore / Auth with a
+// lightweight call if we need deeper readiness signals.
+func (a *App) Prober() *AppProber { return &AppProber{a: a} }
+
+// AppProber is a readiness-probe wrapper around App.
+type AppProber struct{ a *App }
+
+// Name identifies the probe in /readyz output.
+func (p *AppProber) Name() string { return "firebase" }
+
+// Probe is a stub until a real reachability check lands.
+func (p *AppProber) Probe(_ context.Context) error { return nil }
+
 // Close releases the Firestore client (Messaging / Auth clients do not need
 // explicit close; they ride on the same gRPC / HTTP pools).
 func (a *App) Close(_ context.Context) error {

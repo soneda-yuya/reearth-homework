@@ -1482,3 +1482,33 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: Phase 6-9 (Composition Root + Docs + CI) は PR B で対応。
 
 ---
+
+## U-BFF Code Generation PR B (Phase 6-9) 実装完了
+
+**Timestamp**: 2026-04-24T03:30:00Z
+**User Input**: "マージしました" → PR #49 merged
+**AI Response**: `feature/u-bff-code-gen-b` branch で Phase 6-9 を実装:
+
+- **Phase 6 Composition Root**: `cmd/bff/main.go` 本実装
+  - bffConfig: BFF_CMS_* + envconfig default (PROJECT_ALIAS / MODEL_ALIAS / KEY_FIELD / USERS_COLLECTION / SHUTDOWN_GRACE_SECONDS)
+  - run() pattern + defer graceful shutdown
+  - cmsx.Client → FindProjectByAlias + FindModelByAlias で model.ID 解決（nil チェックで fail fast）
+  - firebasex.App → Firestore + Auth client
+  - Reader / ProfileRepo / AuthVerifier → 11 UseCase → 3 Server
+  - Interceptor Chain: Recover → Error → Auth
+  - connectserver.New で HandlerRegistration 3 件 + Start(ctx)
+
+- **Phase 7 Terraform**: 変更ゼロ
+  - terraform fmt -check 緑、terraform validate 緑
+
+- **Phase 8 Docs**:
+  - `aidlc-docs/construction/U-BFF/code/summary.md` 新規（ファイル一覧 + env 一覧 + カバレッジ + 起動 / 疎通手順）
+  - `README.md` に bff セクション追記（3 Service / 11 RPC 一覧、env、ローカル実行、prod 運用）
+
+- **Phase 9 Verification**:
+  - go build / go vet / gofmt / go test -race / golangci-lint 全緑
+  - govulncheck: 標準ライブラリ CVE を指摘（Go 1.26.0 依存、CI は `check-latest: true` で 1.26.1 に上がれば解消）
+
+**Context**: U-BFF Code Generation 全 Phase 完了。PR B を作成し、承認後 Build and Test へ。
+
+---
