@@ -13,12 +13,12 @@ import (
 // application tests. Concurrency protection is overkill for the current
 // tests but keeps the fake safe if a future test runs Execute in goroutines.
 type fakeProfileRepo struct {
-	mu       sync.Mutex
-	store    map[string]domain.UserProfile
-	getErr   error
-	createErr error
-	toggleErr error
-	updateErr error
+	mu          sync.Mutex
+	store       map[string]domain.UserProfile
+	getErr      error
+	createErr   error
+	toggleErr   error
+	updateErr   error
 	registerErr error
 }
 
