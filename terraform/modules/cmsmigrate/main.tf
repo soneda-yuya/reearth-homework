@@ -6,6 +6,7 @@ resource "google_cloud_run_v2_job" "cmsmigrate" {
     template {
       service_account = google_service_account.runtime.email
       timeout         = "120s"
+      max_retries     = 0
 
       containers {
         image = "${var.artifact_registry_url}/cmsmigrate:${var.image_tag}"

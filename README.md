@@ -92,6 +92,43 @@ set -a; source .env; set +a
 
 `/healthz` / `/readyz` で疎通確認可能。
 
+### cmsmigrate（CMS スキーマ適用 Job）
+
+`cmd/cmsmigrate` は reearth-cms の Project / Model / Field を**冪等 CREATE**で適用する一回実行 Job です。初回デプロイと、`internal/cmsmigrate/domain/schema_definition.go` を変更した後に実行します。
+
+**必須 env**:
+
+```
+PLATFORM_SERVICE_NAME=cmsmigrate
+PLATFORM_ENV=dev
+PLATFORM_GCP_PROJECT_ID=overseas-safety-map
+CMSMIGRATE_CMS_BASE_URL=https://cms.example.com
+CMSMIGRATE_CMS_WORKSPACE_ID=wkp_XXXXXXXX
+CMSMIGRATE_CMS_INTEGRATION_TOKEN=<token>
+```
+
+**ローカル実行**:
+
+```bash
+make build-cmsmigrate
+set -a; source .env; set +a
+./bin/cmsmigrate
+```
+
+このコマンドは実際に `CMSMIGRATE_CMS_BASE_URL` で指定された reearth-cms に HTTP で接続して Project / Model / Field を読み書きします。CMS が到達不能、Token が無効、または必須 env が未設定の場合は exit 1 になります。CMS への接続無しでバイナリの起動だけを試したいときは `go test ./internal/cmsmigrate/... -run Validate` などのユニットテストを実行してください。
+
+**prod 実行**:
+
+```bash
+gcloud run jobs execute cms-migrate \
+  --region=asia-northeast1 \
+  --project=overseas-safety-map \
+  --wait
+```
+
+- 自動リトライなし（`max_retries = 0`）。失敗したら Cloud Logging でエラー内容を確認し、修正後に同コマンドで再実行（冪等）。
+- スキーマ drift を検知した場合は `WARN` ログに集約されますが、**自動上書きしません**。運用者が CMS 側か declaration 側を手動で揃えます。
+
 ## Deployment
 
 GCP プロジェクト `overseas-safety-map`（asia-northeast1）に Cloud Run でデプロイします。詳細は [terraform/README.md](terraform/README.md) を参照。
@@ -107,7 +144,8 @@ cmd/                 4 Deployable の main（Composition Root）
 internal/
   platform/          observability / config / connectserver / retry / ratelimit / SDK wrapper
   shared/            errs / clock / validate
-  <bounded-context>/ 後続 Unit で追加（safetyincident / user / notification / cmsmigrate）
+  cmsmigrate/        U-CSS で追加（DDD: domain / application / infrastructure）
+  <bounded-context>/ 後続 Unit で追加（safetyincident / user / notification）
     domain/
     application/
     infrastructure/
@@ -131,6 +169,7 @@ aidlc-docs/          AI-DLC 設計ドキュメント
 - [Unit of Work](aidlc-docs/inception/application-design/unit-of-work.md)（6 Unit × Construction ループ）
 - [Shared Infrastructure](aidlc-docs/construction/shared-infrastructure.md)
 - [U-PLT 設計・実装](aidlc-docs/construction/U-PLT/)
+- [U-CSS 設計・実装](aidlc-docs/construction/U-CSS/)
 
 ## ライセンス / データ出典
 

@@ -10,17 +10,38 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/application"
+	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/infrastructure/cmsclient"
+	"github.com/soneda-yuya/reearth-homework/internal/platform/cmsx"
 	"github.com/soneda-yuya/reearth-homework/internal/platform/config"
 	"github.com/soneda-yuya/reearth-homework/internal/platform/observability"
 )
 
+// cmsmigrateConfig embeds the platform Common block and layers on the three
+// CMS-specific fields. The token is a Secret Manager reference at deploy time
+// (see terraform/modules/cmsmigrate/main.tf).
 type cmsmigrateConfig struct {
 	config.Common
-	// TODO(U-CSS): CMSBaseURL, CMSWorkspaceID, CMSIntegrationToken.
+	CMSBaseURL          string `envconfig:"CMSMIGRATE_CMS_BASE_URL" required:"true"`
+	CMSWorkspaceID      string `envconfig:"CMSMIGRATE_CMS_WORKSPACE_ID" required:"true"`
+	CMSIntegrationToken string `envconfig:"CMSMIGRATE_CMS_INTEGRATION_TOKEN" required:"true"`
 }
 
+// main is intentionally tiny: it delegates to run() and converts a non-nil
+// error into a non-zero exit code. Putting the work in run() ensures that
+// every defer (observability flush, client.Close) actually fires before the
+// process leaves — os.Exit inside main would skip them.
 func main() {
+	if err := run(); err != nil {
+		slog.Error("cmsmigrate failed", "err", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	var cfg cmsmigrateConfig
 	config.MustLoad(&cfg)
 
@@ -34,16 +55,54 @@ func main() {
 		ExporterKind: cfg.OTelExporter,
 	})
 	if err != nil {
-		slog.Error("observability setup failed", "err", err)
-		os.Exit(1)
+		return err
 	}
-	defer func() { _ = shutdown(context.Background()) }()
+	defer func() {
+		flushCtx, flushCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer flushCancel()
+		_ = shutdown(flushCtx)
+	}()
 
-	observability.Logger(ctx).Info("cmsmigrate starting (skeleton)")
+	logger := observability.Logger(ctx)
+	logger.InfoContext(ctx, "cmsmigrate starting",
+		"app.cmsmigrate.phase", "start",
+		"cms.base_url", cfg.CMSBaseURL,
+		"cms.workspace_id", cfg.CMSWorkspaceID,
+	)
 
-	// TODO(U-CSS): Wrap the ensure-schema use case so panics are recovered
-	//              and exit status reflects success.
-	// if err := observability.WrapJobRun(ctx, "cmsmigrate", ...); err != nil { os.Exit(1) }
+	client := cmsx.NewClient(cmsx.Config{
+		BaseURL:     cfg.CMSBaseURL,
+		WorkspaceID: cfg.CMSWorkspaceID,
+		Token:       cfg.CMSIntegrationToken,
+		Timeout:     30 * time.Second,
+	})
+	defer func() { _ = client.Close(ctx) }()
 
-	observability.Logger(ctx).Info("cmsmigrate skeleton finished (no-op)")
+	applier := cmsclient.New(client)
+	usecase := application.NewEnsureSchemaUseCase(
+		applier,
+		logger,
+		observability.Tracer(ctx),
+		observability.Meter(ctx),
+	)
+
+	result, err := usecase.Execute(ctx, application.EnsureSchemaInput{
+		Definition: domain.SafetyMapSchema(),
+	})
+	if err != nil {
+		logger.ErrorContext(ctx, "ensure schema failed",
+			"app.cmsmigrate.phase", "failed",
+			"err", err,
+		)
+		return err
+	}
+
+	logger.InfoContext(ctx, "cmsmigrate finished",
+		"app.cmsmigrate.phase", "done",
+		"project_created", result.ProjectCreated,
+		"models_created", result.ModelsCreated,
+		"fields_created", result.FieldsCreated,
+		"drift_warnings", len(result.DriftWarnings),
+	)
+	return nil
 }
