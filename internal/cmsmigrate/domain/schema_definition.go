@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // aliasProjectRe and aliasFieldRe encode the naming rules enforced by

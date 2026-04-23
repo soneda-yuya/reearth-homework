@@ -260,7 +260,7 @@ func (s *Server) Start(ctx context.Context) error
 ## 7. リポジトリ構造の最終確定（U-PLT として一次生成する範囲）
 
 ```
-reearth-homework/
+overseas-safety-map/
 ├── cmd/
 │   ├── ingestion/    (空の main.go、U-ING で実装)
 │   ├── bff/          (空の main.go、U-BFF で実装)

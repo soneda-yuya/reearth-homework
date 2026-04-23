@@ -3,7 +3,7 @@ package domain
 import (
 	"fmt"
 
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // Point is a WGS84 coordinate. Both values are decimal degrees.

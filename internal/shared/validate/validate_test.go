@@ -6,8 +6,8 @@ import (
 
 	"pgregory.net/rapid"
 
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/validate"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/validate"
 )
 
 func TestNonEmpty(t *testing.T) {

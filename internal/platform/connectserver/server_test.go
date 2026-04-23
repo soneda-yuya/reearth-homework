@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/connectserver"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/connectserver"
 )
 
 type fakeProber struct {

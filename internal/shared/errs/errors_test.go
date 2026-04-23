@@ -8,7 +8,7 @@ import (
 
 	"pgregory.net/rapid"
 
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 func TestWrap_NilReturnsNil(t *testing.T) {

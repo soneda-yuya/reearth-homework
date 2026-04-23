@@ -3,7 +3,7 @@ package domain_test
 import (
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
 )
 
 func TestSafetyMapSchema_PassesValidate(t *testing.T) {

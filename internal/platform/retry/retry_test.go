@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/retry"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/retry"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 func TestDo_SuccessOnFirstAttempt(t *testing.T) {

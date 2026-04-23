@@ -13,7 +13,7 @@ graph LR
         PS["Cloud Pub/Sub"]
     end
 
-    subgraph GoRepo["Go サーバーモノレポ (reearth-homework) — DDD"]
+    subgraph GoRepo["Go サーバーモノレポ (overseas-safety-map) — DDD"]
         subgraph CmdLayer["cmd/* (Composition Roots)"]
             CI["cmd/ingestion"]
             CB["cmd/bff"]

@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // FirestoreDedup is the concrete domain.Dedup backed by Firestore.

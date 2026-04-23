@@ -3,7 +3,7 @@ package domain_test
 import (
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/notification/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/domain"
 )
 
 func TestNotificationPreference_WantsInfoType(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/soneda-yuya/reearth-homework/internal/safetyincident/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/safetyincident/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // fakeMofaSource returns a fixed slice or a sticky error.

@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/retry"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/retry"
 )
 
 // Config describes how to reach a reearth-cms instance. Token is the

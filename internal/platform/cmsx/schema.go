@@ -12,10 +12,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/observability"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/retry"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/observability"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/retry"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // FindProjectByAlias returns the project identified by alias, or (nil, nil)

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/application"
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/application"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
 )
 
 // TestExecute_DriftReportedForTypeMismatch seeds the fake with a field whose

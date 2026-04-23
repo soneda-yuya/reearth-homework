@@ -3,7 +3,7 @@ package cmsx
 import (
 	"fmt"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
 )
 
 // ProjectDTO is the JSON shape cmsx returns for a project. Field names are

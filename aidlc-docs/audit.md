@@ -1365,3 +1365,22 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: U-PLT + U-NTF で U-BFF に必要な GCP リソースが全て整備されているため、Infrastructure Design 本編は「なぜ既存で充足するのか」を明示する文書。次は PR 作成。
 
 ---
+
+## リポジトリリネーム（reearth-homework → overseas-safety-map）
+
+**Timestamp**: 2026-04-24T01:45:00Z
+**User Input**: "その前にrepository名を変えても良いですか" → "1.overseas-safety-mapでお願いします。2. 47を更新してください 3. はい"
+**AI Response**:
+1. GitHub 側で `gh repo rename overseas-safety-map` 実行、リポジトリを `soneda-yuya/overseas-safety-map` に rename
+2. ローカル `git remote set-url origin https://github.com/soneda-yuya/overseas-safety-map.git`
+3. `main` から `chore/rename-module-path` branch を作成し、以下を一括更新:
+   - `go.mod` module declaration
+   - 全 Go / proto ファイルの import path (`github.com/soneda-yuya/reearth-homework` → `overseas-safety-map`、81 ファイル)
+   - `terraform/environments/prod/variables.tf` の `github_repository` default
+   - Markdown 内の GitHub URL とプレーンな `reearth-homework` 言及（audit.md とローカルパス参照の aidlc-state.md は除外）
+4. 検証: `go build ./...` / `go vet ./...` / `go test ./...` すべて緑
+5. PR #47（U-BFF Code Generation Plan）は rename 後に rebase して refresh
+
+**Context**: Code Generation 着手前にモジュール / リポジトリ名をプロジェクト名に合わせて改名。ローカルディレクトリ名（`/Users/y.soneda/projects/yuya/reearth-homework`）は変更しない方針（user が手動で行う選択を尊重）。
+
+---

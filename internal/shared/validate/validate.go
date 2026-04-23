@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // NonEmpty returns an error if v is empty.

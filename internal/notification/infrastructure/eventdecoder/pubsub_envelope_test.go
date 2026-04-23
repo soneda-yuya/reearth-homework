@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/notification/infrastructure/eventdecoder"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/infrastructure/eventdecoder"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 func buildEnvelope(t *testing.T, inner map[string]any, attrs map[string]string) []byte {

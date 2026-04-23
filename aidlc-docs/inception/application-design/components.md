@@ -4,7 +4,7 @@
 
 | リポジトリ | 役割 | 使用技術 |
 |---|---|---|
-| **reearth-homework**（このリポジトリ） | Go サーバーモノレポ（ingestion / bff / notifier / cmsmigrate） | Go 単一モジュール、**DDD: Bounded Context × Layered Architecture** |
+| **overseas-safety-map**（このリポジトリ） | Go サーバーモノレポ（ingestion / bff / notifier / cmsmigrate） | Go 単一モジュール、**DDD: Bounded Context × Layered Architecture** |
 | **overseas-safety-map-app**（新規作成予定） | Flutter アプリ | Dart / Flutter、Clean Architecture + MVVM、Riverpod |
 
 > **暗黙決定（設計者注）**: Q2 で単一 Go モジュールを選択、Q7 で Pub/Sub 分離型を選択したため、通知 Cloud Function（Pub/Sub サブスクライバ）は **Go で実装し、同じ Go モノレポの `cmd/notifier` に配置** する。言語統一のメリットとドメイン／リポジトリの再利用性を優先。

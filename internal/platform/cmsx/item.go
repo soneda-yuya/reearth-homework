@@ -10,8 +10,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/observability"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/observability"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // ItemDTO is the trimmed view of a reearth-cms item we work with from Go.

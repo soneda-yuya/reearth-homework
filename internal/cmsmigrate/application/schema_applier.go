@@ -6,7 +6,7 @@ package application
 import (
 	"context"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
 )
 
 // SchemaApplier is the outbound port the use case uses to reach the CMS.

@@ -13,15 +13,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/interfaces/job"
-	"github.com/soneda-yuya/reearth-homework/internal/notification/application"
-	"github.com/soneda-yuya/reearth-homework/internal/notification/infrastructure/dedup"
-	"github.com/soneda-yuya/reearth-homework/internal/notification/infrastructure/eventdecoder"
-	"github.com/soneda-yuya/reearth-homework/internal/notification/infrastructure/fcm"
-	"github.com/soneda-yuya/reearth-homework/internal/notification/infrastructure/userrepo"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/config"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/firebasex"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/observability"
+	"github.com/soneda-yuya/overseas-safety-map/internal/interfaces/job"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/application"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/infrastructure/dedup"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/infrastructure/eventdecoder"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/infrastructure/fcm"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/infrastructure/userrepo"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/config"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/firebasex"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/observability"
 )
 
 // notifierConfig is the full env schema for this deployable. Tuning fields

@@ -12,9 +12,9 @@ import (
 	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/soneda-yuya/reearth-homework/internal/safetyincident/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/clock"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/safetyincident/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/clock"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // Limiter is the subset of platform/ratelimit.Limiter that IngestUseCase

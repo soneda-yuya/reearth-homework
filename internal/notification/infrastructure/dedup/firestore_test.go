@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/notification/infrastructure/dedup"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/infrastructure/dedup"
 )
 
 // TestNew_AppliesDefaults verifies that zero-value Config fields fall back

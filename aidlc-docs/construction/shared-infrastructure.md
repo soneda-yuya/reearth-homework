@@ -20,7 +20,7 @@
 - **Pool / Provider**:
   - Pool: `overseas-safety-map-pool`
   - Provider: `github-provider`
-  - 条件: `assertion.repository == 'soneda-yuya/reearth-homework'`
+  - 条件: `assertion.repository == 'soneda-yuya/overseas-safety-map'`
 - **Service Accounts**（すべて `@overseas-safety-map.iam.gserviceaccount.com`）:
   - `ci-deployer` — CI デプロイ用（Terraform / Cloud Run / Artifact Registry 管理権限）
   - `ingestion-runtime` — Pub/Sub Publisher + Secret Accessor（ingestion 関連のみ）

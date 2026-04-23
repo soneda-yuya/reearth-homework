@@ -5,7 +5,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/config"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/config"
 )
 
 type testConfig struct {

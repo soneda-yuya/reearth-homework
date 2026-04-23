@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/shared/clock"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/clock"
 )
 
 func TestSystemClock_ReturnsUTC(t *testing.T) {

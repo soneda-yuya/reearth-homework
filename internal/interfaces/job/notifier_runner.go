@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/soneda-yuya/reearth-homework/internal/notification/application"
-	"github.com/soneda-yuya/reearth-homework/internal/notification/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/application"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // maxPushBodyBytes caps how much the handler will read from one Pub/Sub
