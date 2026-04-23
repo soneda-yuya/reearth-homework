@@ -1203,3 +1203,26 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: PR を作成してレビュー依頼。承認後 U-BFF (Sprint 3、依存関係的には U-ING の前だったが実装順で最後) へ進む。
 
 ---
+
+## U-NTF Build and Test Merged + U-BFF Design Plan Start
+
+**Timestamp**: 2026-04-23T15:00:00Z
+**User Input**: "マージしちゃおう" (PR #42 merge)
+**AI Actions**:
+1. PR #42 auto-merge (commit `0993843`)。**U-NTF Unit 完全完了** (Design / Infra / Code / Build & Test runbook 全て揃い)。
+2. Feature branch `feature/u-bff-design-plan` を切って `construction/plans/U-BFF-design-plan.md` を作成。
+3. U-BFF 固有の判断ポイント 9 問を用意:
+   - Q1: 認証方式 (全 RPC 必須 vs 一部匿名 vs 全匿名)
+   - Q2: SafetyIncident 読み取りキャッシュ戦略 (直接 vs in-memory vs Redis)
+   - Q3: CrimeMap 集計の実装場所 (in-memory vs CMS API vs Firestore aggregation)
+   - Q4: UserProfile の Firestore collection 共有 (U-NTF と同じ vs 分離)
+   - Q5: FCM Token 登録の冪等性 (ArrayUnion vs sub-collection)
+   - Q6: Connect error code マッピング (errs.Kind ベース一律 vs RPC 個別)
+   - Q7: OTel observability (Span / Metric / phase 属性)
+   - Q8: テスト戦略 (層別 + Connect handler e2e)
+   - Q9: PR 分割 (2 PR 推奨 vs 1 PR vs 3 PR)
+4. aidlc-state.md を「U-BFF Minimal 合本版 計画作成、回答待ち」に更新。
+
+**Context**: PR 作成して計画レビュー依頼。回答後に U-BFF-design.md (合本版) を生成する。
+
+---
