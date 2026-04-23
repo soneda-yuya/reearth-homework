@@ -820,3 +820,28 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成してレビュー依頼。承認後 U-CSS Build and Test へ進む。
 
 ---
+
+## U-CSS Code Gen Merged + Build and Test (Template) Start
+
+**Timestamp**: 2026-04-23T01:30:00Z
+**User Input**: "マージしました" (PR #25 merge) → "B" (Build and Test は実 CMS 接続無しでテンプレートのみ作成し U-ING に進む選択)
+**AI Actions**:
+1. main を pull (PR #25 `7cf86d9` + Dependabot #12-#16 取り込み確認)。
+2. Feature branch `feature/u-css-build-test` を切って `aidlc-docs/construction/U-CSS/build-and-test/runbook.md` を生成 (Status: Template only と冒頭で明示)。
+3. ランブック構成:
+   - §1 目的 (実 CMS 疎通 4 点 + Q A 設計仮定の答え合わせ)
+   - §2 事前準備 (CMS インスタンス情報 / Token / 専用 test workspace 推奨 + 環境変数)
+   - §3 実行手順 (初回 / no-op 再実行 / drift 確認、各々期待ログ + チェックリスト)
+   - §4 トラブルシューティング (401/403 / 404 / JSON 形状 / 400 / 部分失敗)
+   - §5 Production 反映手順 (Secret 投入 → terraform apply → gcloud run jobs execute → Cloud Logging 確認)
+   - §6 実行記録欄 (実 CMS 実行時に追記する placeholder)
+   - §7 関連ドキュメント
+4. aidlc-state.md を「Build and Test runbook テンプレート、実 CMS 疎通は運用フェーズ」に更新。Code Gen を [x] に。
+
+**Decision**:
+- 実 CMS 接続が現時点で未準備のため、ランブックは "Status: Template only" として明示し、§6 を未記入のまま残す。実際の疎通結果は CMS 準備完了後に追記する運用とする。
+- これにより U-CSS は構造上完了 (Design / Infra / Code / Build & Test runbook) と扱い、U-ING へ進む。
+
+**Context**: PR を作成してテンプレートレビュー。承認後 U-ING (Ingestion Unit) へ進む。
+
+---
