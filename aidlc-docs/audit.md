@@ -1147,3 +1147,36 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR 作成して計画レビュー依頼。
 
 ---
+
+## U-NTF Code Gen Plan Merged + Implementation
+
+**Timestamp**: 2026-04-23T11:30:00Z
+**User Input**: 3 質問を 1 つずつチャットで確認 → 全て A で回答
+**AI Actions**:
+1. PR #40 auto-merge (commit `717c735`)。U-NTF Code Gen 計画承認。
+2. Feature branch `feature/u-ntf-code` で Phase 1-9 を順次実装:
+   - **Phase 1 Domain** (100% coverage): UserProfile/NotificationPreference + WantsInfoType/IsDeliverable、BatchResult、NewArrivalEvent、4 Port
+   - **Phase 2 Application** (92.8%): DeliverNotificationUseCase.Execute (dedup → resolve → 並列 send + cleanup、skip-and-continue)、fake 実装 3 種、6 シナリオテスト
+   - **Phase 3 Interfaces** (89.3%): NotifierHandler.Push (Q6 status code 戦略) + Health、7 シナリオテスト
+   - **Phase 4 Infrastructure** (eventdecoder 96.4%): FirestoreDedup (RunTransaction)、FirestoreUserRepository (composite index query + ArrayRemove)、FirebaseFCM (per-token error classification)、PubSubEnvelopeDecoder (base64 + JSON + attr fallback)
+   - **Phase 5 Platform**: firebasex 本実装化 (firebase.NewApp + Firestore/Messaging lazy init)、Firestore dependency added
+   - **Phase 6 Composition Root**: cmd/notifier/main.go 本実装 (run() pattern + signal handler + srv.Shutdown with grace period)
+   - **Phase 7 Terraform**: modules/shared/firestore.tf に TTL policy + 複合 index 追加、validate 緑
+   - **Phase 8 Docs**: U-NTF/code/summary.md 新規、README に notifier セクション追加、layout/AI-DLC index 更新
+   - **Phase 9 CI**: go test/vet/fmt/golangci-lint 全緑、terraform validate 緑
+
+**Coverage (Q8 [A] 方針通り)**:
+- Domain 100%, Application 92.8%, Interfaces 89.3%, EventDecoder 96.4% → 全て目標達成
+- Firestore/FCM/Firebase SDK 依存 (dedup/userrepo/fcm/firebasex) は smoke test のみ、実検証は Build and Test
+
+**Decisions**:
+- Pub/Sub Push + /pubsub/push endpoint、Q6 HTTP status code 戦略実装
+- Firestore TTL 24h + 複合 index を shared module に集約
+- run() pattern + graceful shutdown (10s grace) で in-flight drain
+- Firebase Admin SDK v4 (messaging + firestore 両方同じ App から lazy)
+
+Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/firestore + firebase.google.com/go/v4 + transitive)。
+
+**Context**: PR 作成してレビュー依頼。承認後 U-NTF Build and Test へ進む。
+
+---
