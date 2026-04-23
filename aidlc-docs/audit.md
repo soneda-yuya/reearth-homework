@@ -1079,3 +1079,22 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成してレビュー依頼。承認後 U-NTF Infrastructure Design へ進む。
 
 ---
+
+## U-NTF Design Merged + Infrastructure Design Plan Start
+
+**Timestamp**: 2026-04-23T10:00:00Z
+**User Input**: "承認。マージしましょう" (PR #37 merge)
+**AI Actions**:
+1. PR #37 auto-merge (commit `a32b4a8`)。U-NTF Minimal 合本版 design 完了。
+2. terraform/modules/notifier/ の現状を確認: U-PLT で Cloud Run Service + Pub/Sub Push Subscription + 完全な IAM (datastore.user / cloudmessaging.messagesSender / run.invoker / pubsub service agent token creator / DLQ publisher) が既に揃っている (U-ING よりさらに完成度高い)。
+3. Feature branch `feature/u-ntf-infra-plan` を切って `construction/plans/U-NTF-infrastructure-design-plan.md` を作成。
+4. U-NTF 固有の差分確認に絞った 4 質問:
+   - Q1: Firestore `notifier_dedup` TTL policy の配置場所 (shared module 推奨)
+   - Q2: Firestore `users` 複合インデックスの配置場所 (shared module 推奨、U-BFF 共用)
+   - Q3: Cloud Run Service scaling 値 (現状 min=0/max=2 維持推奨)
+   - Q4: env の Terraform 反映粒度 (U-ING Q5 と同じ、運用ポリシー/依存関係のみ Terraform)
+5. aidlc-state.md を「Infrastructure Design 計画作成、回答待ち」に更新。
+
+**Context**: PR を作成して計画レビュー依頼。回答後に Infrastructure Design 本編を生成する。
+
+---
