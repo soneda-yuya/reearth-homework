@@ -1010,3 +1010,26 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成してレビュー依頼。承認後 U-ING Build and Test へ進む。
 
 ---
+
+## U-ING Code Gen PR B Merged + Build and Test (Template) Start
+
+**Timestamp**: 2026-04-23T08:30:00Z
+**User Input**: "マージしました" (PR #34 merge、Copilot 3 round 対応後)
+**AI Actions**:
+1. PR #34 merge (commit `1dd9711`)。U-ING Code Gen 完了 (PR A + PR B、Phase 1-11)。
+2. Feature branch `feature/u-ing-build-test` を切って `construction/U-ING/build-and-test/runbook.md` を作成 (Status: Template only、U-CSS と同じ運用方針)。
+3. ランブック構成 (U-CSS より拡張):
+   - §1 目的 (8 確認項目 + Q C 設計仮定答え合わせ)
+   - §2 事前準備 (reearth-cms / Anthropic / Mapbox / Pub/Sub、test workspace 推奨、ADC + .env)
+   - §3 実行手順 (Incremental 初回 / 2 回目 no-op / Initial バックフィル / エラーケース / Production 反映)
+   - §4 トラブルシューティング (MOFA XML パース / LLM 抽出失敗 / Mapbox 不正確 / CMS 401/400 / Pub/Sub publish 失敗 / max_retries=0)
+   - §5 観測ポイント (Metric / ログ属性の推奨閾値)
+   - §6 実行記録欄 (placeholder、3 タイミング: ローカル初回 / Production バックフィル / Production 継続運用)
+   - §7 関連ドキュメント
+4. aidlc-state.md 更新 (Code Gen PR B → [x]、Build and Test → runbook template)。
+
+**Status**: U-ING Unit 構造上完了 (Design / Infra / Code (PR A+B) / Build & Test runbook 全て揃い)。実 API 疎通は §6 で運用フェーズに持ち越し。
+
+**Context**: PR を作成してレビュー依頼。承認後 U-NTF (Notifier Unit) へ進む。
+
+---
