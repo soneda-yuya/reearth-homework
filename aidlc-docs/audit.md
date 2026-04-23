@@ -954,3 +954,35 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成してレビュー依頼。承認後 U-ING Code Generation へ進む。
 
 ---
+
+## U-ING Infra Design Merged + Code Generation Plan Start
+
+**Timestamp**: 2026-04-23T04:00:00Z
+**User Input**: "ありがとう！マージしましょう！" (PR #31 merge)
+**AI Actions**:
+1. PR #31 auto-merge (commit `b5c1415`)。U-ING Infrastructure Design 完了。
+2. Feature branch `feature/u-ing-code-gen-plan` を切って `construction/plans/U-ING-code-generation-plan.md` を作成。
+3. Phase 1-11 チェックリスト形式で計画:
+   - Phase 1: Domain (MailItem / SafetyIncident / Point / GeocodeSource / 5 Port + PBT)
+   - Phase 2: Application (IngestUseCase + Result + FakeApplier 群 + 6 シナリオテスト)
+   - Phase 3: MOFA adapter (XML types + Source + fixture + parser test)
+   - Phase 4: LLM (platform/llm/claude + safetyincident/infrastructure/llm/extractor)
+   - Phase 5: Geocoder Chain (Mapbox + Centroid + Chain + country_centroids.json)
+   - Phase 6: CMS Repository (cmsx に Item CRUD 追加 + Repository adapter)
+   - Phase 7: Pub/Sub Publisher (EventPublisher + pstest)
+   - Phase 8: Composition Root (cmd/ingestion/main.go 拡張 + run() pattern)
+   - Phase 9: Terraform (max_retries=0 + env 2 個)
+   - Phase 10: Docs (code/summary.md + README)
+   - Phase 11: CI 緑化 + カバレッジ 85%+
+4. 設計判断 Q A-F を用意:
+   - A: PR 分割 (2 PR 推奨 — Phase 1-7 / Phase 8-11)
+   - B: LLM 抽象化粒度 (LocationExtractor Port のみ推奨)
+   - C: MOFA XML パーサー戦略 (仮定構造で先行実装、実 XML は Build & Test で修正)
+   - D: Terraform を本 PR 同梱 (U-CSS と同じ推奨)
+   - E: country_centroids.json 出典 (Natural Earth CC0 推奨)
+   - F: カバレッジ層別目標 (U-CSS と同じ方針継承推奨)
+5. aidlc-state.md を「Code Generation 計画作成、回答待ち」に更新。
+
+**Context**: PR を作成して計画レビュー依頼。回答後に Phase 1-11 実装へ進む。
+
+---
