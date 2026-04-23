@@ -1338,3 +1338,30 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: Interface と実装例の整合性が担保された。コード生成段階で迷わず参照できる。
 
 ---
+
+## U-BFF Infrastructure Design Plan PR #45 マージ + 本編生成着手
+
+**Timestamp**: 2026-04-24T00:55:00Z
+**User Input**: "B"（次の段階に進む）
+**AI Response**: PR #45 (U-BFF Infra Plan + PR #44 Copilot 対応) を squash merge。main を pull、feature branch 削除。`feature/u-bff-infra-design` branch を作成し、以下 2 ドキュメントを生成:
+
+1. `construction/U-BFF/infrastructure-design/deployment-architecture.md`
+   - Component Overview (ASCII 図): Flutter → Cloud Run (`bff`) → CMS / Firestore / Firebase Auth
+   - §2 Infrastructure Decisions: Q1-Q6 の決定事項を一覧化
+   - §3 Cloud Run 仕様: `min=0 / max=3 / cpu=1 / memory=512Mi`、concurrency 80
+   - §4 IAM: `datastore.user` + `secretmanager.secretAccessor`、Firebase Auth 関連 IAM 不要の理由
+   - §5 Firestore: document-id 直接アクセスのみ、composite index 不要
+   - §6 外部依存: reearth-cms / Firebase Auth
+   - §7 運用ランブック / §8 非スコープ / §9 トレーサビリティ
+
+2. `construction/U-BFF/infrastructure-design/terraform-plan.md`
+   - §1 サマリ: **Terraform コード変更ゼロ**
+   - §2 既存 modules/bff/ ファイル一覧
+   - §3-5 Cloud Run / IAM / Firestore の現状維持定義
+   - §6 Terraform apply フロー: image tag 差し替えのみ
+   - §7 Q1-Q6 の Terraform 変更ゼロ根拠表
+   - §8 将来の拡張ポイント
+
+**Context**: U-PLT + U-NTF で U-BFF に必要な GCP リソースが全て整備されているため、Infrastructure Design 本編は「なぜ既存で充足するのか」を明示する文書。次は PR 作成。
+
+---
