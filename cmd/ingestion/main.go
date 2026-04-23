@@ -182,6 +182,21 @@ func run() error {
 		return err
 	}
 
+	// If we received SIGTERM/SIGINT during Execute, skip-and-continue will
+	// have swallowed every per-item ctx-canceled error, so err is nil even
+	// though the Run is incomplete. Surface the cancellation so Cloud Run
+	// Jobs reports the execution as failed instead of quietly succeeding.
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		logger.WarnContext(ctx, "ingestion interrupted",
+			"app.ingestion.phase", "interrupted",
+			"app.ingestion.mode", cfg.Mode,
+			"fetched", result.Fetched,
+			"processed", result.Processed,
+			"err", ctxErr,
+		)
+		return ctxErr
+	}
+
 	logger.InfoContext(ctx, "ingestion finished",
 		"app.ingestion.phase", "done",
 		"app.ingestion.mode", cfg.Mode,
