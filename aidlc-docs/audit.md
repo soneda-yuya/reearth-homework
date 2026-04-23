@@ -917,3 +917,40 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成して計画レビュー。回答後に Infrastructure Design 本編 (deployment-architecture.md + terraform-plan.md) を生成する。
 
 ---
+
+## U-ING Infra Plan Answered + Design Generated
+
+**Timestamp**: 2026-04-23T03:30:00Z
+**User Input**: 5 質問を 1 つずつチャットで確認 → 全て A で回答
+**AI Actions**:
+1. plan ファイルに Q1-Q5 全て `[A]: A` を記入、最終確認欄を Q&A 要旨で埋めた。
+2. PR #30 を auto-merge (commit `11e5b9a`)。Dependabot 1 PR (go.mod 更新) も同時に取り込み済み。
+3. Feature branch `feature/u-ing-infra-design` を切って以下を生成:
+   - `construction/U-ING/infrastructure-design/deployment-architecture.md`
+     - Component Overview (Cloud Scheduler → Cloud Run Job → MOFA / LLM / Mapbox / CMS / Pub/Sub の図示)
+     - Q1-Q5 決定事項一覧
+     - Cloud Run Job 仕様 (max_retries=0、INGESTION_MODE/PUBSUB_TOPIC_ID 追加、tuning は envconfig)
+     - Cloud Scheduler 仕様 (現状維持)
+     - IAM (Runtime SA / Scheduler invoker SA + 共有 cms-integration-token)
+     - 可観測性 (slog 属性、OTel Metric 一式、Trace、将来アラート候補)
+     - 運用ランブック (障害復旧 self-healing、バックフィル、Rotation)
+     - 非スコープ
+     - トレーサビリティ
+   - `construction/U-ING/infrastructure-design/terraform-plan.md`
+     - 変更サマリ (max_retries=0 + 2 env 追加)
+     - 詳細 diff (疑似)
+     - terraform apply 想定出力 (Plan: 0 to add, 1 to change, 0 to destroy)
+     - envconfig default で吸収する 6 env の説明
+     - Code Generation へ渡す TODO
+     - 非 Terraform セットアップ手順 (Anthropic / Mapbox API key 投入手順)
+4. aidlc-state.md を「Infrastructure Design 本編生成済み、PR レビュー待ち」に更新。
+
+**Key Infra Decisions**:
+- max_retries=0 を新規明示 (Scheduler tick が事実上 retry を担う、self-healing と整合)
+- INGESTION_MODE は Terraform で incremental 固定、initial は実行時 --update-env-vars override
+- env tuning パラメータ (concurrency / rate limit) は envconfig default で吸収、Terraform 最小化
+- Pub/Sub topic / Secret 3 種 / Scheduler / IAM は U-PLT で全て揃っているため新規追加なし
+
+**Context**: PR を作成してレビュー依頼。承認後 U-ING Code Generation へ進む。
+
+---
