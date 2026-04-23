@@ -1180,3 +1180,26 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: PR 作成してレビュー依頼。承認後 U-NTF Build and Test へ進む。
 
 ---
+
+## U-NTF Code Merged + Build and Test (Template)
+
+**Timestamp**: 2026-04-23T14:30:00Z
+**User Input**: "マージしました" (PR #41 merge)
+**AI Actions**:
+1. PR #41 merge (commit `a308205`)。U-NTF Code Generation 完了 (Copilot 1 round 対応含む)。
+2. Feature branch `feature/u-ntf-build-test` を切って `construction/U-NTF/build-and-test/runbook.md` を作成 (Status: Template only、U-CSS/U-ING と同じ方針)。
+3. ランブック構成:
+   - §1 目的 (8 確認項目: HTTP status code / Dedup TTL / Firestore index / info_types filter / SendMulticast / 無効 token 除去 / envelope 構造 / SIGTERM drain)
+   - §2 事前準備 (Firebase project / ADC / 実機 or emulator / Firestore index READY 確認 / テストデータ投入 / .env)
+   - §3 実行手順 (ローカル単体疎通 / Dedup 確認 / info_types filter / Malformed 400 / 大 body 500 / SIGTERM drain / Production 反映)
+   - §4 トラブルシューティング (Firestore index 未構築 / FCM sender mismatch / Pub/Sub push 未達 / Dedup 不動作 / Firebase 認証)
+   - §5 観測ポイント (received / deduped / duration p95 / fcm.sent failure 率 / token_invalidated / DLQ)
+   - §6 実行記録欄 (3 タイミング: ローカル / Prod 初回 / Prod 継続)
+   - §7 関連ドキュメント
+4. aidlc-state.md 更新 (Code Gen → [x]、Build and Test → runbook template)。
+
+**Status**: U-NTF Unit 構造上完了 (Design / Infra / Code / Build & Test runbook 全て揃い)。実 API 疎通は §6 で運用フェーズに持ち越し。
+
+**Context**: PR を作成してレビュー依頼。承認後 U-BFF (Sprint 3、依存関係的には U-ING の前だったが実装順で最後) へ進む。
+
+---
