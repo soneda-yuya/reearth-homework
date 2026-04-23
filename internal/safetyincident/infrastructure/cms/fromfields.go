@@ -40,6 +40,14 @@ func fromFields(f map[string]any) (domain.SafetyIncident, error) {
 	if err != nil {
 		return domain.SafetyIncident{}, err
 	}
+	ingestedAt, err := optionalTime(f, "ingested_at")
+	if err != nil {
+		return domain.SafetyIncident{}, err
+	}
+	updatedAt, err := optionalTime(f, "updated_at")
+	if err != nil {
+		return domain.SafetyIncident{}, err
+	}
 
 	return domain.SafetyIncident{
 		MailItem: domain.MailItem{
@@ -61,8 +69,8 @@ func fromFields(f map[string]any) (domain.SafetyIncident, error) {
 		ExtractedLocation: optionalString(f, "extracted_location"),
 		Geometry:          point,
 		GeocodeSource:     parseGeocodeSource(optionalString(f, "geocode_source")),
-		IngestedAt:        optionalTime(f, "ingested_at"),
-		UpdatedAt:         optionalTime(f, "updated_at"),
+		IngestedAt:        ingestedAt,
+		UpdatedAt:         updatedAt,
 	}, nil
 }
 
@@ -95,16 +103,21 @@ func requireTime(f map[string]any, key string) (time.Time, error) {
 	return t, nil
 }
 
-func optionalTime(f map[string]any, key string) time.Time {
+// optionalTime parses key as RFC3339 when present. Absent / empty values yield
+// the zero time with no error (the field is optional). A present-but-malformed
+// value returns KindInternal so CMS schema drift surfaces instead of silently
+// producing a zero timestamp that downstream code would treat as "never set".
+func optionalTime(f map[string]any, key string) (time.Time, error) {
 	raw, ok := f[key].(string)
 	if !ok || raw == "" {
-		return time.Time{}
+		return time.Time{}, nil
 	}
 	t, err := time.Parse(time.RFC3339, raw)
 	if err != nil {
-		return time.Time{}
+		return time.Time{}, errs.Wrap("cms.from_fields", errs.KindInternal,
+			fmt.Errorf("field %q: invalid RFC3339: %w", key, err))
 	}
-	return t
+	return t, nil
 }
 
 // parseGeometry decodes the GeoJSON-ish {type: "Point", coordinates: [lng, lat]}

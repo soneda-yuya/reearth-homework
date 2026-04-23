@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -24,9 +25,14 @@ import (
 )
 
 // sampleReader serves the BFF handler tests: a canned, 2-item corpus.
+// lastSearchFilter lets tests assert the SearchFilter the handler forwarded,
+// which is how we guard against the query / cursor wiring bug that motivated
+// proto's dedicated query field.
 type sampleReader struct {
-	items      []domain.SafetyIncident
-	nextCursor string
+	mu               sync.Mutex
+	items            []domain.SafetyIncident
+	nextCursor       string
+	lastSearchFilter domain.SearchFilter
 }
 
 func (r *sampleReader) List(context.Context, domain.ListFilter) ([]domain.SafetyIncident, string, error) {
@@ -41,7 +47,10 @@ func (r *sampleReader) Get(_ context.Context, keyCd string) (*domain.SafetyIncid
 	}
 	return nil, errs.Wrap("sampleReader", errs.KindNotFound, errors.New("no such item"))
 }
-func (r *sampleReader) Search(context.Context, domain.SearchFilter) ([]domain.SafetyIncident, string, error) {
+func (r *sampleReader) Search(_ context.Context, filter domain.SearchFilter) ([]domain.SafetyIncident, string, error) {
+	r.mu.Lock()
+	r.lastSearchFilter = filter
+	r.mu.Unlock()
 	return r.items, r.nextCursor, nil
 }
 func (r *sampleReader) ListNearby(context.Context, domain.Point, float64, int) ([]domain.SafetyIncident, error) {
@@ -77,7 +86,7 @@ func newSampleItems() []domain.SafetyIncident {
 	}
 }
 
-func newSafetyIncidentTestServer(t *testing.T) overseasmapv1connect.SafetyIncidentServiceClient {
+func newSafetyIncidentTestServer(t *testing.T) (overseasmapv1connect.SafetyIncidentServiceClient, *sampleReader) {
 	t.Helper()
 	reader := &sampleReader{items: newSampleItems()}
 	srv := rpc.NewSafetyIncidentServer(
@@ -95,7 +104,7 @@ func newSafetyIncidentTestServer(t *testing.T) overseasmapv1connect.SafetyIncide
 	mux.Handle(path, handler)
 	h := httptest.NewServer(mux)
 	t.Cleanup(h.Close)
-	return overseasmapv1connect.NewSafetyIncidentServiceClient(h.Client(), h.URL)
+	return overseasmapv1connect.NewSafetyIncidentServiceClient(h.Client(), h.URL), reader
 }
 
 func withAuth(req connect.AnyRequest) {
@@ -104,7 +113,7 @@ func withAuth(req connect.AnyRequest) {
 
 func TestSafetyIncident_ListRoundTrip(t *testing.T) {
 	t.Parallel()
-	client := newSafetyIncidentTestServer(t)
+	client, _ := newSafetyIncidentTestServer(t)
 	req := connect.NewRequest(&overseasmapv1.ListSafetyIncidentsRequest{
 		Filter: &overseasmapv1.SafetyIncidentFilter{CountryCd: "JP"},
 	})
@@ -123,7 +132,7 @@ func TestSafetyIncident_ListRoundTrip(t *testing.T) {
 
 func TestSafetyIncident_GetHitAndMiss(t *testing.T) {
 	t.Parallel()
-	client := newSafetyIncidentTestServer(t)
+	client, _ := newSafetyIncidentTestServer(t)
 	// Hit
 	reqHit := connect.NewRequest(&overseasmapv1.GetSafetyIncidentRequest{KeyCd: "K1"})
 	withAuth(reqHit)
@@ -145,7 +154,7 @@ func TestSafetyIncident_GetHitAndMiss(t *testing.T) {
 
 func TestSafetyIncident_GeoJSON(t *testing.T) {
 	t.Parallel()
-	client := newSafetyIncidentTestServer(t)
+	client, _ := newSafetyIncidentTestServer(t)
 	req := connect.NewRequest(&overseasmapv1.GetSafetyIncidentsAsGeoJSONRequest{
 		Filter: &overseasmapv1.SafetyIncidentFilter{Limit: 100},
 	})
@@ -178,7 +187,7 @@ func TestSafetyIncident_GeoJSON(t *testing.T) {
 
 func TestSafetyIncident_SearchRoundTrip(t *testing.T) {
 	t.Parallel()
-	client := newSafetyIncidentTestServer(t)
+	client, _ := newSafetyIncidentTestServer(t)
 	req := connect.NewRequest(&overseasmapv1.SearchSafetyIncidentsRequest{
 		Filter: &overseasmapv1.SafetyIncidentFilter{CountryCd: "JP"},
 	})
@@ -192,9 +201,38 @@ func TestSafetyIncident_SearchRoundTrip(t *testing.T) {
 	}
 }
 
+// TestSafetyIncident_SearchForwardsQuery guards the proto `query` field ↔
+// domain.SearchFilter.Query wiring. The handler must forward Request.Query
+// into the reader filter without losing it on the cursor field — the exact
+// regression that motivated adding `string query = 2` to the proto.
+func TestSafetyIncident_SearchForwardsQuery(t *testing.T) {
+	t.Parallel()
+	client, reader := newSafetyIncidentTestServer(t)
+	req := connect.NewRequest(&overseasmapv1.SearchSafetyIncidentsRequest{
+		Filter: &overseasmapv1.SafetyIncidentFilter{CountryCd: "JP", Cursor: "page-2"},
+		Query:  "earthquake",
+	})
+	withAuth(req)
+	if _, err := client.SearchSafetyIncidents(context.Background(), req); err != nil {
+		t.Fatalf("SearchSafetyIncidents: %v", err)
+	}
+	reader.mu.Lock()
+	got := reader.lastSearchFilter
+	reader.mu.Unlock()
+	if got.Query != "earthquake" {
+		t.Errorf("reader saw Query = %q; want earthquake", got.Query)
+	}
+	if got.Cursor != "page-2" {
+		t.Errorf("reader saw Cursor = %q; want page-2 (cursor must not be stolen by query)", got.Cursor)
+	}
+	if got.CountryCd != "JP" {
+		t.Errorf("reader saw CountryCd = %q", got.CountryCd)
+	}
+}
+
 func TestSafetyIncident_ListNearby(t *testing.T) {
 	t.Parallel()
-	client := newSafetyIncidentTestServer(t)
+	client, _ := newSafetyIncidentTestServer(t)
 	req := connect.NewRequest(&overseasmapv1.ListNearbyRequest{
 		Center:   &overseasmapv1.Point{Lat: 35, Lng: 139},
 		RadiusKm: 1000,

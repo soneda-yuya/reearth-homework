@@ -201,3 +201,21 @@ func TestFromFields_MissingRequired(t *testing.T) {
 		t.Errorf("err = %v; want KindInternal (schema drift)", err)
 	}
 }
+
+// TestFromFields_MalformedOptionalTime guards the optionalTime error path:
+// a present-but-unparsable ingested_at / updated_at must surface as
+// KindInternal rather than silently degrading to the zero time (the old
+// behaviour hid CMS schema drift).
+func TestFromFields_MalformedOptionalTime(t *testing.T) {
+	t.Parallel()
+	fields := itemFields("K1", "JP", 35, 139, "mapbox")
+	fields["ingested_at"] = "not-a-timestamp"
+	client := &stubReaderClient{
+		listRes: cmsx.ListItemsResult{Items: []cmsx.ItemDTO{{ID: "i-1", Fields: fields}}},
+	}
+	reader := cms.NewReader(client, "m-1", "key_cd")
+	_, _, err := reader.List(context.Background(), domain.ListFilter{})
+	if !errs.IsKind(err, errs.KindInternal) {
+		t.Errorf("err = %v; want KindInternal (optionalTime parse failure)", err)
+	}
+}
