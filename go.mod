@@ -3,7 +3,7 @@ module github.com/soneda-yuya/reearth-homework
 go 1.26
 
 require (
-	connectrpc.com/connect v1.18.1
+	connectrpc.com/connect v1.19.2
 	github.com/kelseyhightower/envconfig v1.4.0
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.43.0
@@ -28,5 +28,5 @@ require (
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260409153401-be6f6cb8b1fa // indirect
 	golang.org/x/tools v0.44.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.9 // indirect
 )
