@@ -5,7 +5,7 @@
 - **プロジェクトタイプ**: グリーンフィールド
 - **開始日**: 2026-04-20T17:55:00Z（アイデア変更のリセット）
 - **現在のフェーズ**: CONSTRUCTION
-- **現在のステージ**: U-ING（Ingestion Unit、Sprint 2）／ Build and Test — runbook テンプレート作成、実 API 疎通は運用フェーズで実施
+- **現在のステージ**: U-NTF（Notifier Unit、Sprint 4）／ Minimal 合本版 — 計画 Q1-Q8 作成、回答待ち
 
 ## ワークフロー圧縮方針（2026-04-22 採用）
 **U-CSS 以降の Unit は Functional Design / NFR Requirements / NFR Design を「Minimal 合本版」1 ドキュメントにまとめる**。U-PLT で共通規約を確定したため、各 Unit 固有の内容のみを簡潔に記述する。Infrastructure Design / Code Generation / Build & Test は従来どおり独立して実施する。
@@ -74,7 +74,13 @@
 - [x] コード生成 計画（PR #32 merged 2026-04-23、Phase 1-11 + Q A-F 全 A）
 - [x] コード生成 PR A（Phase 1-7、PR #33 merged 2026-04-23、Copilot 2 round 対応含む）
 - [x] コード生成 PR B（Phase 8-11、PR #34 merged 2026-04-23、Copilot 3 round 対応含む）
-- [ ] ビルドとテスト（Build and Test runbook template）— 作成済み、実 API 疎通は運用フェーズで実施
+- [x] ビルドとテスト（Build and Test runbook template、PR #35 merged 2026-04-23、実 API 疎通は運用フェーズで実施）
+
+#### U-NTF（進行中、Sprint 4）
+- [ ] Minimal 合本版（Functional + NFR Req + NFR Design）— 計画 Q1-Q8 作成、回答待ち
+- [ ] インフラ設計（Infrastructure Design）
+- [ ] コード生成（Code Generation）
+- [ ] ビルドとテスト（Build and Test）
 
 #### U-CSS / U-ING / U-BFF / U-NTF / U-APP
 - [ ] 各 Unit を同じ 6 サブステージでループ
