@@ -79,7 +79,7 @@ C) Terraform で作らず、Firebase Console で手動設定
   - ⚠️ IaC の一貫性が崩れる
   - 採用しない
 
-[A]: 
+[A]: A
 
 ### Question 2 — Firestore `users` 複合インデックス
 
@@ -110,7 +110,7 @@ A) **推奨**: **shared module に追加**（`modules/shared/firestore.tf`、Q1 
 B) notifier module に追加
   - ⚠️ U-BFF 側が同じインデックスを参照するため、所有者が曖昧に
 
-[A]: 
+[A]: A
 
 ### Question 3 — Cloud Run Service の scaling 値
 
@@ -135,7 +135,7 @@ B) `min=1 / max=3` で Cold start を回避
 C) `max=5` に拡張
   - ⚠️ 現実のトラフィックに対して過剰、課金 instance が並走する
 
-[A]: 
+[A]: A
 
 ### Question 4 — env 追加 / Terraform 反映粒度
 
@@ -161,18 +161,18 @@ B) 全部 Terraform で明示
 
 C) 全部 envconfig default
 
-[A]: 
+[A]: A
 
 ---
 
-## 承認前の最終確認（回答後に AI が埋めます）
+## 承認前の最終確認（回答確定）
 
-- Firestore TTL の場所: _TBD_
-- Firestore インデックスの場所: _TBD_
-- Cloud Run scaling 値: _TBD_
-- env の Terraform 反映粒度: _TBD_
+- **Q1 [A]**: Firestore `notifier_dedup` TTL policy = **`modules/shared/firestore.tf`** に追加
+- **Q2 [A]**: Firestore `users` 複合インデックス = **`modules/shared/firestore.tf`** に追加（U-BFF と共用）
+- **Q3 [A]**: Cloud Run scaling = **現状維持**（`min=0 / max=2 / cpu=1 / memory=512Mi`）
+- **Q4 [A]**: env の Terraform 反映粒度 = U-ING Q5 [A] と同じ（**既存 2 env はそのまま、tuning は envconfig default で吸収**）。**Terraform 追加 env ゼロ**
 
-回答完了後、矛盾・曖昧さがなければ以下を生成:
+回答確定済み。以下を生成:
 
 - `construction/U-NTF/infrastructure-design/deployment-architecture.md`
 - `construction/U-NTF/infrastructure-design/terraform-plan.md`
