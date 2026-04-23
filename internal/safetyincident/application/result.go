@@ -9,12 +9,13 @@ package application
 type Phase string
 
 const (
-	PhaseFetch   Phase = "fetch"
-	PhaseLookup  Phase = "lookup"
-	PhaseExtract Phase = "extract"
-	PhaseGeocode Phase = "geocode"
-	PhaseUpsert  Phase = "upsert"
-	PhasePublish Phase = "publish"
+	PhaseFetch    Phase = "fetch"
+	PhaseValidate Phase = "validate"
+	PhaseLookup   Phase = "lookup"
+	PhaseExtract  Phase = "extract"
+	PhaseGeocode  Phase = "geocode"
+	PhaseUpsert   Phase = "upsert"
+	PhasePublish  Phase = "publish"
 )
 
 // IngestResult summarises a single Run for the composition root's exit log.

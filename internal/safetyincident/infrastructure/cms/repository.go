@@ -41,13 +41,13 @@ func New(client ItemClient, modelID, keyField string) *Repository {
 // Used by the use case to short-circuit LLM/Mapbox calls (Q3 [A]).
 func (r *Repository) Exists(ctx context.Context, keyCd string) (bool, error) {
 	if keyCd == "" {
-		return false, errs.Wrap("repository.exists",
+		return false, errs.Wrap("cms.repository.exists",
 			errs.KindInvalidInput,
-			errors.New("keyCd is required"))
+			errors.New("key_cd is required"))
 	}
 	dto, err := r.client.FindItemByFieldValue(ctx, r.modelID, r.keyField, keyCd)
 	if err != nil {
-		return false, err
+		return false, errs.Wrap("cms.repository.exists", errs.KindOf(err), err)
 	}
 	return dto != nil, nil
 }
@@ -57,8 +57,10 @@ func (r *Repository) Exists(ctx context.Context, keyCd string) (bool, error) {
 // the diff complexity at this scale.
 func (r *Repository) Upsert(ctx context.Context, incident domain.SafetyIncident) error {
 	fields := toFields(incident)
-	_, err := r.client.UpsertItemByFieldValue(ctx, r.modelID, r.keyField, incident.KeyCd, fields)
-	return err
+	if _, err := r.client.UpsertItemByFieldValue(ctx, r.modelID, r.keyField, incident.KeyCd, fields); err != nil {
+		return errs.Wrap("cms.repository.upsert", errs.KindOf(err), err)
+	}
+	return nil
 }
 
 // toFields converts a SafetyIncident to the field map shape the CMS API

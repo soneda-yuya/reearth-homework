@@ -200,6 +200,34 @@ func TestExecute_PublishFailureDoesNotRollback(t *testing.T) {
 	}
 }
 
+// Scenario 7: invalid items are skipped at the new `validate` phase and do
+// not reach any downstream adapter — they just record Failed[validate]=N.
+func TestExecute_InvalidItem_IsSkippedAtValidatePhase(t *testing.T) {
+	t.Parallel()
+	bad := domain.MailItem{
+		KeyCd: "", // missing required field → Validate fails
+		Title: "x",
+	}
+	source := &fakeMofaSource{items: map[domain.IngestionMode][]domain.MailItem{
+		domain.IngestionModeIncremental: append(sampleItems("ok-1"), bad),
+	}}
+	extractor := &fakeLocationExtractor{}
+	repo := newFakeRepository()
+	uc := newUseCase(t, source, extractor, defaultGeocoder(), repo, &fakeEventPublisher{})
+
+	res, err := uc.Execute(context.Background(), application.IngestInput{Mode: domain.IngestionModeIncremental})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Processed != 1 || res.Failed[application.PhaseValidate] != 1 {
+		t.Errorf("counters = %+v, want processed=1 failed[validate]=1", res)
+	}
+	// The invalid item must not reach the extractor.
+	if extractor.calls != 1 {
+		t.Errorf("extractor.calls = %d, want 1 (invalid item should be short-circuited)", extractor.calls)
+	}
+}
+
 // Bonus: a fatal MOFA fetch returns an error from Execute (not exit 0). This
 // is the only path that does NOT use skip-and-continue.
 func TestExecute_FetchFailureBubblesUp(t *testing.T) {

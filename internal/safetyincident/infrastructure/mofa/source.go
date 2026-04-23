@@ -33,8 +33,9 @@ func New(baseURL string, httpClient *http.Client) *Source {
 }
 
 // Fetch returns every item published at the given mode's MOFA endpoint.
-// Items whose LeaveDate cannot be parsed are dropped with a warning span
-// event — they are not worth failing the whole Run for.
+// Items whose LeaveDate cannot be parsed are dropped silently and counted
+// via the `mofa.items.dropped` span attribute — they are not worth failing
+// the whole Run for, but the count is visible in traces for triage.
 func (s *Source) Fetch(ctx context.Context, mode domain.IngestionMode) ([]domain.MailItem, error) {
 	url, err := s.urlFor(mode)
 	if err != nil {

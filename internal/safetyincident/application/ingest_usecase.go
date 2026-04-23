@@ -221,6 +221,16 @@ func (u *IngestUseCase) processItem(ctx context.Context, item domain.MailItem) i
 		trace.WithAttributes(attribute.String("key_cd", item.KeyCd)))
 	defer span.End()
 
+	// Fail fast on malformed items — MOFA occasionally emits rows with
+	// missing required fields (empty title, missing country_cd). We record
+	// the failure under `phase=validate` so they surface in metrics instead
+	// of producing less actionable failures downstream (e.g. Mapbox 404 on
+	// an empty country code).
+	if err := item.Validate(); err != nil {
+		u.recordItemFailure(ctx, item, PhaseValidate, err)
+		return itemOutcome{failedPhase: PhaseValidate}
+	}
+
 	exists, err := u.repo.Exists(ctx, item.KeyCd)
 	if err != nil {
 		u.recordItemFailure(ctx, item, PhaseLookup, err)
@@ -252,7 +262,10 @@ func (u *IngestUseCase) processItem(ctx context.Context, item domain.MailItem) i
 		u.recordItemFailure(ctx, item, PhaseGeocode, err)
 		return itemOutcome{failedPhase: PhaseGeocode}
 	}
-	if u.fallbackCounter != nil {
+	// Count fallback only — the metric name promises "fallback", so Mapbox
+	// successes should not inflate it. Operators alert on fallback ratio as
+	// a signal that geocoding quality is degraded.
+	if geocode.Source == domain.GeocodeSourceCountryCentroid && u.fallbackCounter != nil {
 		u.fallbackCounter.Add(ctx, 1,
 			metric.WithAttributes(attribute.String("source", geocode.Source.String())))
 	}

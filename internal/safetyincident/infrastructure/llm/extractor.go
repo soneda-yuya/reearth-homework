@@ -61,8 +61,11 @@ func (e *Extractor) Extract(ctx context.Context, item domain.MailItem) (domain.E
 	return parsed, nil
 }
 
-// buildUserPrompt feeds the LLM the item fields it actually needs. We don't
-// include the LeaveDate or codes — they don't help with geographic disambiguation.
+// buildUserPrompt feeds the LLM the item fields it actually needs for
+// location disambiguation. We include country_cd alongside country_name so
+// the model can disambiguate ambiguous romanisations, and we drop the
+// LeaveDate / info codes because they don't contribute to the geographic
+// answer.
 func buildUserPrompt(item domain.MailItem) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Country: %s (%s)\n", item.CountryName, item.CountryCd)
