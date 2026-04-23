@@ -1133,3 +1133,17 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成してレビュー依頼。承認後 U-NTF Code Generation へ進む。
 
 ---
+
+## U-NTF Infra Merged + Code Gen Plan Start
+
+**Timestamp**: 2026-04-23T11:00:00Z
+**User Input**: "急いでいるので承認！マージしましょう！" (PR #39 merge)
+**AI Actions**:
+1. PR #39 auto-merge (commit `3cf3f69`)。U-NTF Infra Design 完了。
+2. Feature branch `feature/u-ntf-code-gen-plan` を切って `construction/plans/U-NTF-code-generation-plan.md` を作成。
+3. Phase 1-9 チェックリスト + Q A-C (PR 分割 / Firebase SDK / カバレッジ目標) を用意。
+4. U-NTF は U-CSS 規模 (~2,000 行) なので 1 PR 推奨。
+
+**Context**: PR 作成して計画レビュー依頼。
+
+---
