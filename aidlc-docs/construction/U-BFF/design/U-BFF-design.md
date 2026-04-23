@@ -142,6 +142,9 @@ type SafetyIncidentReader interface {
     List(ctx, filter ListFilter) (items []SafetyIncident, nextCursor string, err error)
     Get(ctx, keyCd string) (*SafetyIncident, error)
     Search(ctx, filter SearchFilter) (items []SafetyIncident, nextCursor string, err error)
+    // ListNearby is a top-N proximity query; the caller bounds the result set
+    // with `limit`, so pagination is not modeled at this layer. If a future
+    // client needs paging, add a cursor return alongside `limit`.
     ListNearby(ctx, center Point, radiusKm float64, limit int) ([]SafetyIncident, error)
 }
 
@@ -266,9 +269,11 @@ type CMSReader struct {
     projectAlias, modelAlias string
 }
 
-func (r *CMSReader) List(ctx, f ListFilter) ([]domain.SafetyIncident, error) {
-    // cmsx.Client.ListItems(...) で filter 付き取得
-    // Item → SafetyIncident 変換 (19 フィールド、U-ING の toFields の逆)
+func (r *CMSReader) List(ctx, f ListFilter) (items []domain.SafetyIncident, nextCursor string, err error) {
+    // cmsx.Client.ListItems(...) で filter + f.Cursor を渡して 1 ページ取得。
+    // CMS 側の next page token をそのまま nextCursor として返す（opaque）。
+    // Item → SafetyIncident 変換 (19 フィールド、U-ING の toFields の逆)。
+    // 末尾到達で nextCursor = ""。
 }
 
 func (r *CMSReader) Get(ctx, keyCd string) (*SafetyIncident, error) {
@@ -276,7 +281,13 @@ func (r *CMSReader) Get(ctx, keyCd string) (*SafetyIncident, error) {
     // nil → KindNotFound
 }
 
-// Search / ListNearby / ... 同様
+func (r *CMSReader) Search(ctx, f SearchFilter) (items []domain.SafetyIncident, nextCursor string, err error) {
+    // List と同じ cursor パターン。CMS 側のキーワード検索結果に next page token がある前提。
+}
+
+func (r *CMSReader) ListNearby(ctx, center Point, radiusKm float64, limit int) ([]domain.SafetyIncident, error) {
+    // top-N proximity query。limit で打ち切り、cursor なし。
+}
 ```
 
 ※ `cmsx.Client` の ListItems / クエリフィルタ機能は U-CSS の Item CRUD に読み取り系のメソッドを追加する形で実装。

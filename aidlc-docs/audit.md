@@ -1322,3 +1322,19 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: PR #44 は merged 済みだが、指摘されたドキュメントレベルの誤りを PR #45 内で修正。コード生成段階で正しい signature / API を参照できるようにする。
 
 ---
+
+## U-BFF Design PR #45 Copilot レビュー対応 (1 件)
+
+**Timestamp**: 2026-04-24T00:40:00Z
+**User Input**: "コメントを確認してください"
+**AI Response**: PR #45 に Copilot コメント 1 件あり（L145）:
+
+- SafetyIncidentReader.List/Search を (items, nextCursor, err) に更新した一方、§1.5.1 の CMSReader.List 実装例が `([]domain.SafetyIncident, error)` のまま残っており、同一ドキュメント内の整合が崩れていた。
+
+修正:
+1. §1.3.1 ListNearby にコメント追記: top-N proximity query であるため cursor を持たない設計意図を明示。将来 paging が必要になれば cursor 戻り値を追加する旨も記載。
+2. §1.5.1 CMSReader.List / Search 実装例を `(items, nextCursor string, err error)` シグネチャに更新。CMS 側の next page token を opaque にそのまま返す方針をコメント化。ListNearby 実装例も明示的に追加し、cursor なしの理由をコメント化。
+
+**Context**: Interface と実装例の整合性が担保された。コード生成段階で迷わず参照できる。
+
+---
