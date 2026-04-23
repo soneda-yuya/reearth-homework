@@ -1366,6 +1366,51 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 
 ---
 
+## U-BFF Infrastructure Design PR #46 マージ + Code Generation 計画着手
+
+**Timestamp**: 2026-04-24T01:05:00Z
+**User Input**: "B"（次の段階に進む）
+**AI Response**: PR #46 (U-BFF Infrastructure Design 本編、Terraform 変更ゼロ) を squash merge。main を pull、feature branch 削除。`feature/u-bff-codegen-plan` branch を作成し、`construction/plans/U-BFF-code-generation-plan.md` を生成。
+
+**Phase 構成 (9 Phase)**:
+- Phase 1: Proto 生成 (buf generate で gen/go/v1/)
+- Phase 2: Domain Layer (SafetyIncidentReader + crimemap + user + authctx)
+- Phase 3: Application Layer (5 read UseCase + Aggregator + 4 user UseCase)
+- Phase 4: Infrastructure (cmsx Read 拡張 + firebasex.Auth + CMSReader + FirestoreProfileRepo + FirebaseAuthVerifier)
+- Phase 5: Interfaces (Auth/ErrorInterceptor + 3 Service handler)
+- Phase 6: Composition Root (cmd/bff/main.go)
+- Phase 7: Terraform (変更なし、念のため fmt/validate)
+- Phase 8: Docs (summary + README)
+- Phase 9: CI / Verification
+
+**質問 Q A-F**:
+- Q A: PR 分割 (Phase 1-5 Go / Phase 6-9 結線 vs 別案)
+- Q B: UserProfile struct の共通化 (BC 別 vs 一元化)
+- Q C: FirebaseAuthVerifier の検証方式 (VerifyIDToken vs AndCheckRevoked)
+- Q D: cmsx Read API 実装範囲 (ListNearby は BFF 側で距離計算)
+- Q E: カバレッジ目標
+- Q F: RPC Handler テスト方式 (connecttest.Server vs 直接インスタンス)
+
+**Context**: Design / Infra Design が完了し、いよいよ最後のバックエンド Unit の実装計画。Q A-F を順に確認。
+
+---
+
+## U-BFF Code Generation Plan Q A-F 回答
+
+**Timestamp**: 2026-04-24T01:20:00Z
+**User Input**: "A"（Q A-F 全てに対して）
+**AI Response**: Q A-F 全て A で確定:
+- Q A [A]: PR 分割 = PR A (Phase 1-5) + PR B (Phase 6-9)、U-ING パターン踏襲
+- Q B [A]: UserProfile struct は別 BC でそれぞれ定義（DDD 原則）
+- Q C [A]: Firebase Auth は VerifyIDToken のみ（ローカル検証、p95 優先）
+- Q D [A]: cmsx に ListItems + SearchItems 追加、ListNearby は BFF で距離計算
+- Q E [A]: 層別カバレッジ (domain 95 / app 90 / infra 70 / interceptor 90 / rpc 80 / 全体 85)
+- Q F [A]: connecttest.Server で e2e (Interceptor + UseCase fake)
+
+**Context**: Plan ファイルに全回答を記入、PR 作成へ。
+
+---
+
 ## リポジトリリネーム（reearth-homework → overseas-safety-map）
 
 **Timestamp**: 2026-04-24T01:45:00Z
@@ -1382,5 +1427,13 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 5. PR #47（U-BFF Code Generation Plan）は rename 後に rebase して refresh
 
 **Context**: Code Generation 着手前にモジュール / リポジトリ名をプロジェクト名に合わせて改名。ローカルディレクトリ名（`/Users/y.soneda/projects/yuya/reearth-homework`）は変更しない方針（user が手動で行う選択を尊重）。
+
+---
+
+## PR #48 マージ + PR #47 rebase 実行
+
+**Timestamp**: 2026-04-24T02:05:00Z
+**User Input**: "マージしました"
+**AI Response**: PR #48 (module rename) がマージされたことを確認。main を pull、chore branch 削除。`feature/u-bff-codegen-plan` を新 main に rebase し、audit.md の append 順序衝突を時系列で解決。
 
 ---
