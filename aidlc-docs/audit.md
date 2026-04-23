@@ -1254,3 +1254,56 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: PR 作成してレビュー依頼。承認後 U-BFF Infrastructure Design へ進む。
 
 ---
+
+## U-BFF Design PR 承認・マージ
+
+**Timestamp**: 2026-04-23T06:00:00Z
+**User Input**: "マージしました"
+**AI Response**: PR #44 (U-BFF Design、Minimal 合本版) がマージされたことを確認。main を pull、feature branch 削除。aidlc-state.md を更新し「Minimal 合本版 本編: PR #44 merged 2026-04-23」を記録。次は U-BFF Infrastructure Design plan に着手。
+**Context**: U-BFF Design 本編完了。Infrastructure Design 段階へ遷移。
+
+---
+
+## U-BFF 全体進捗確認
+
+**Timestamp**: 2026-04-23T06:02:00Z
+**User Input**: "全体の進捗を教えてください"
+**AI Response**: INCEPTION 100%、CONSTRUCTION 約 70-72%。U-PLT / U-CSS / U-ING / U-NTF 完了、U-BFF 約 25%（Plan + Design 本編まで）、U-APP 未着手、Global B&T 未着手、Operations プレースホルダー。
+
+**Context**: 全体進捗サマリーを提示。
+
+---
+
+## U-BFF Infrastructure Design 計画着手
+
+**Timestamp**: 2026-04-23T06:10:00Z
+**User Input**: （進捗確認後、Infrastructure Design plan を生成するよう進行）
+**AI Response**: `construction/plans/U-BFF-infrastructure-design-plan.md` を作成。Q1-Q6 の論点:
+- Q1: Flutter クライアント接続方式（CORS 要否）
+- Q2: Cloud Run scaling / concurrency 値（現状維持 vs min=1 vs concurrency 調整）
+- Q3: Firestore リソース所有権（shared module に変更不要か）
+- Q4: Firebase Admin SDK 利用に伴う追加 IAM
+- Q5: 追加 env の Terraform 反映粒度（U-NTF Q4 と同方針）
+- Q6: Terraform 変更ゼロでも Infrastructure Design ドキュメントを生成するか
+
+**Context**: U-PLT で BFF module が既に充足しているため、U-BFF Infra Design は薄く済む見込み。Q1-Q6 を順に確認。
+
+---
+
+## U-BFF Infrastructure Design Plan Q1-Q6 回答
+
+**Timestamp**: 2026-04-24T00:05:00Z
+**User Input**: "A"（Q1-Q6 全てに対して）
+**AI Response**: Q1-Q6 全て A で確定:
+- Q1 [A]: Flutter mobile 前提、CORS 設定なし
+- Q2 [A]: Cloud Run scaling 現状維持（min=0 / max=3 / cpu=1 / memory=512Mi、concurrency デフォルト 80）
+- Q3 [A]: Firestore shared/firestore.tf 変更なし（document-id 直接アクセスのみ）
+- Q4 [A]: IAM 変更なし（既存 datastore.user + secretmanager.secretAccessor）
+- Q5 [A]: env = U-ING Q5 / U-NTF Q4 と同方針、Terraform 追加 env ゼロ
+- Q6 [A]: 変更ゼロでも Infrastructure Design ドキュメント 2 種生成
+
+**結果**: Terraform コード変更ゼロ。deployment-architecture.md + terraform-plan.md で「既存インフラで充足する根拠」を文書化する方針で確定。
+
+**Context**: Plan ファイル更新、PR 作成へ。
+
+---
