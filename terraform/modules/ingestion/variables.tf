@@ -36,12 +36,7 @@ variable "cms_workspace_id" {
 }
 
 variable "new_arrival_topic_id" {
-  description = "Fully-qualified Pub/Sub topic id the job publishes NewArrivalEvent to."
-  type        = string
-}
-
-variable "new_arrival_topic_name" {
-  description = "Short topic name (used by the container as env)."
+  description = "Fully-qualified Pub/Sub topic id the job publishes NewArrivalEvent to (e.g. projects/.../topics/safety-incident.new-arrival)."
   type        = string
 }
 

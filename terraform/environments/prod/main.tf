@@ -54,7 +54,6 @@ module "ingestion" {
   cms_base_url                      = var.cms_base_url
   cms_workspace_id                  = var.cms_workspace_id
   new_arrival_topic_id              = module.shared.new_arrival_topic_id
-  new_arrival_topic_name            = module.shared.new_arrival_topic_name
   cms_integration_token_secret_id   = module.shared.cms_integration_token_secret_id
   cms_integration_token_secret_name = module.shared.cms_integration_token_secret_name
   claude_api_key_secret_id          = module.shared.ingestion_claude_secret_id

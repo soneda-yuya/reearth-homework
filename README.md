@@ -129,6 +129,66 @@ gcloud run jobs execute cms-migrate \
 - 自動リトライなし（`max_retries = 0`）。失敗したら Cloud Logging でエラー内容を確認し、修正後に同コマンドで再実行（冪等）。
 - スキーマ drift を検知した場合は `WARN` ログに集約されますが、**自動上書きしません**。運用者が CMS 側か declaration 側を手動で揃えます。
 
+### ingestion（MOFA 取込パイプライン Job）
+
+`cmd/ingestion` は MOFA 海外安全情報 XML を取得し、Claude で発生地名を抽出 → Mapbox でジオコード（失敗時は国 Centroid フォールバック）→ reearth-cms に upsert → Pub/Sub 通知、までを行う Cloud Run Job です。Cloud Scheduler が `*/5 * * * *` で `incremental` モードを起動します。
+
+**必須 env**:
+
+```
+PLATFORM_SERVICE_NAME=ingestion
+PLATFORM_ENV=dev
+PLATFORM_GCP_PROJECT_ID=overseas-safety-map
+INGESTION_CMS_BASE_URL=https://cms.example.com
+INGESTION_CMS_WORKSPACE_ID=wkp_XXXXXXXX
+INGESTION_CMS_INTEGRATION_TOKEN=<token>
+INGESTION_CLAUDE_API_KEY=<key>
+INGESTION_MAPBOX_API_KEY=<key>
+INGESTION_PUBSUB_TOPIC_ID=projects/overseas-safety-map/topics/safety-incident.new-arrival  # 短 topic 名 (safety-incident.new-arrival) も可
+```
+
+任意 env（envconfig default で吸収。本番では Terraform でも明示しない）:
+
+```
+INGESTION_MODE=incremental                 # initial | incremental
+INGESTION_MOFA_BASE_URL=https://www.ezairyu.mofa.go.jp/html/opendata
+INGESTION_CMS_PROJECT_ALIAS=overseas-safety-map
+INGESTION_CMS_MODEL_ALIAS=safety-incident
+INGESTION_CMS_KEY_FIELD=key_cd
+INGESTION_CLAUDE_MODEL=claude-haiku-4-5
+INGESTION_MAPBOX_MIN_SCORE=0.5
+INGESTION_CONCURRENCY=5
+INGESTION_LLM_RATE_LIMIT_RPM=300           # = 5 req/s
+INGESTION_GEOCODE_RATE_LIMIT_RPM=600       # = 10 req/s
+INGESTION_HTTP_TIMEOUT_SECONDS=30
+```
+
+**ローカル実行**:
+
+```bash
+make build-ingestion
+set -a; source .env; set +a
+./bin/ingestion
+```
+
+実 MOFA / Claude / Mapbox / reearth-cms / Pub/Sub に HTTP / gRPC 接続するため、いずれかが到達不能だと exit 1 になります。バイナリ起動だけ試したい場合は `go test ./internal/safetyincident/...` を実行してください。
+
+**prod 実行**:
+
+通常運用は **Cloud Scheduler が自動起動**するため操作不要。初回バックフィル（過去全件取込）のみ手動:
+
+```bash
+gcloud run jobs execute ingestion \
+  --region=asia-northeast1 \
+  --project=overseas-safety-map \
+  --update-env-vars=INGESTION_MODE=initial \
+  --wait
+```
+
+- 自動リトライなし（`max_retries = 0`）。失敗しても 5 分後の Scheduler tick で fresh Run が起動するため、`incremental` の連続取りこぼしは発生しにくい
+- per-item 失敗は **skip + 構造化ログ + Metric**、Run 自体は exit 0（U-ING design Q7 [A]）。失敗 item は CMS に未登録のまま残り、次の Run で自動再試行される（冪等性 + skip-and-continue の合わせ技）
+- ジオコーディング失敗時は **国 Centroid フォールバック**で必ず Item を保存。Flutter 側で `geocode_source = "country_centroid"` を見て「概算位置」UI を表示
+
 ## Deployment
 
 GCP プロジェクト `overseas-safety-map`（asia-northeast1）に Cloud Run でデプロイします。詳細は [terraform/README.md](terraform/README.md) を参照。
@@ -145,7 +205,8 @@ internal/
   platform/          observability / config / connectserver / retry / ratelimit / SDK wrapper
   shared/            errs / clock / validate
   cmsmigrate/        U-CSS で追加（DDD: domain / application / infrastructure）
-  <bounded-context>/ 後続 Unit で追加（safetyincident / user / notification）
+  safetyincident/    U-ING で追加（DDD: domain / application / infrastructure）
+  <bounded-context>/ 後続 Unit で追加（user / notification）
     domain/
     application/
     infrastructure/
@@ -170,6 +231,7 @@ aidlc-docs/          AI-DLC 設計ドキュメント
 - [Shared Infrastructure](aidlc-docs/construction/shared-infrastructure.md)
 - [U-PLT 設計・実装](aidlc-docs/construction/U-PLT/)
 - [U-CSS 設計・実装](aidlc-docs/construction/U-CSS/)
+- [U-ING 設計・実装](aidlc-docs/construction/U-ING/)
 
 ## ライセンス / データ出典
 
