@@ -54,3 +54,18 @@ func TestWithUIDNilContext(t *testing.T) {
 		t.Errorf("WithUID(nil) = (%q, %v); want (uid-ok, true)", uid, ok)
 	}
 }
+
+func TestWithUIDNilContextAndEmptyUID(t *testing.T) {
+	t.Parallel()
+	// Nil-guard must apply even when uid is empty: callers chaining
+	// WithUID(nil, "") into context-aware APIs should never get a nil
+	// context back.
+	var ctx context.Context
+	got := authctx.WithUID(ctx, "") //nolint:staticcheck // SA1012: exercising the nil guard
+	if got == nil {
+		t.Fatal("WithUID(nil, \"\") returned nil; callers would panic downstream")
+	}
+	if _, ok := authctx.UIDFrom(got); ok {
+		t.Error("empty uid must not populate ctx")
+	}
+}

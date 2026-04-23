@@ -10,16 +10,16 @@ import "context"
 
 type ctxKey struct{}
 
-// WithUID returns a child context carrying uid. If uid is empty the parent
+// WithUID returns a child context carrying uid. A nil ctx is normalised to
+// context.Background() first so callers never receive a nil return, matching
+// the defensive nil-guard in UIDFrom. If uid is empty the (normalised) ctx
 // is returned unchanged — an empty uid never stands for "authenticated".
-// A typed-nil ctx yields a Background-rooted context rather than panicking
-// in context.WithValue, matching the defensive nil-guard in UIDFrom.
 func WithUID(ctx context.Context, uid string) context.Context {
-	if uid == "" {
-		return ctx
-	}
 	if ctx == nil {
 		ctx = context.Background()
+	}
+	if uid == "" {
+		return ctx
 	}
 	return context.WithValue(ctx, ctxKey{}, uid)
 }
