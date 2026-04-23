@@ -136,9 +136,12 @@ type NotificationPreference struct {
 // internal/safetyincident/domain/read_ports.go（新規、write port は U-ING が持つ）
 
 type SafetyIncidentReader interface {
-    List(ctx, filter ListFilter) ([]SafetyIncident, error)
+    // List returns a page of incidents plus an opaque nextCursor. nextCursor
+    // is empty when the caller has reached the end. filter.Cursor carries the
+    // opaque token produced by the previous call.
+    List(ctx, filter ListFilter) (items []SafetyIncident, nextCursor string, err error)
     Get(ctx, keyCd string) (*SafetyIncident, error)
-    Search(ctx, filter SearchFilter) ([]SafetyIncident, error)
+    Search(ctx, filter SearchFilter) (items []SafetyIncident, nextCursor string, err error)
     ListNearby(ctx, center Point, radiusKm float64, limit int) ([]SafetyIncident, error)
 }
 
@@ -149,7 +152,7 @@ type ListFilter struct {
     LeaveFrom time.Time
     LeaveTo   time.Time
     Limit     int
-    Cursor    string
+    Cursor    string // opaque token; empty = first page
 }
 ```
 
@@ -188,6 +191,8 @@ type GeoJSONUseCase struct { reader SafetyIncidentReader; ... } // List 結果�
 
 各 UseCase は `reader` を呼ぶだけの薄いラッパ。認証は interceptor 側で済んでいるので UseCase 内で uid を扱う必要なし（読取は uid non-aware）。
 
+`ListUseCase` / `SearchUseCase` は `reader.List` / `reader.Search` の返す `(items, nextCursor, err)` をそのまま RPC レイヤに伝播する（UseCase 側の戻り値も `(items, nextCursor, err)`）。`GeoJSONUseCase` は Limit を上限まで設定し、1 回読み切りで `nextCursor` は破棄する MVP 前提。
+
 #### 1.4.2 `safetyincident/crimemap/application.Aggregator`
 
 ```go
@@ -197,9 +202,9 @@ type Aggregator struct {
 }
 
 func (a *Aggregator) Choropleth(ctx, filter CrimeMapFilter) (ChoroplethResult, error) {
-    items, err := a.reader.List(ctx, ListFilter{
+    items, _, err := a.reader.List(ctx, ListFilter{
         LeaveFrom: filter.LeaveFrom, LeaveTo: filter.LeaveTo,
-        Limit: 10000, // MVP 上限
+        Limit: 10000, // MVP 上限。集計系は単発読み切りなので nextCursor は破棄
     })
     if err != nil { return ChoroplethResult{}, err }
 
@@ -224,7 +229,8 @@ func (a *Aggregator) Choropleth(ctx, filter CrimeMapFilter) (ChoroplethResult, e
 }
 
 func (a *Aggregator) Heatmap(ctx, filter CrimeMapFilter) (HeatmapResult, error) {
-    items, err := a.reader.List(ctx, /* same filter */)
+    items, _, err := a.reader.List(ctx, /* same filter */)
+    if err != nil { return HeatmapResult{}, err }
     // centroid fallback は除外 (精度低いため heatmap に乗せない)
     var pts []HeatmapPoint
     excluded := 0
@@ -335,10 +341,11 @@ type AuthInterceptor struct {
 }
 
 func (a *AuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-    return func(ctx, req) (resp, err) {
+    return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
         authHeader := req.Header().Get("Authorization")
         if !strings.HasPrefix(authHeader, "Bearer ") {
-            return nil, errs.Wrap("auth.missing_token", errs.KindUnauthorized, err)
+            return nil, errs.Wrap("auth.missing_token", errs.KindUnauthorized,
+                errors.New("missing bearer token"))
         }
         idToken := strings.TrimPrefix(authHeader, "Bearer ")
         uid, err := a.verifier.Verify(ctx, idToken)
@@ -441,22 +448,32 @@ func run() error {
     cmServer := rpc.NewCrimeMapServer(aggregator)
     upServer := rpc.NewUserProfileServer(getProfileUC, toggleUC, updateUC, registerFcmUC)
 
-    // Connect mux
+    // Connect handlers + probers — shape matches existing connectserver API
+    // (HandlerRegistration + Prober + Start). Interceptors must be applied at
+    // handler construction because connect cannot retrofit them onto a built
+    // http.Handler.
     interceptors := connect.WithInterceptors(
         observability.TraceInterceptor(tracer),
         observability.MetricInterceptor(meter),
         rpc.NewErrorInterceptor(cfg.Env),
         rpc.NewAuthInterceptor(authVerifier, logger),
     )
-    mux := http.NewServeMux()
-    mux.Handle(safetymapv1connect.NewSafetyIncidentServiceHandler(siServer, interceptors))
-    mux.Handle(safetymapv1connect.NewCrimeMapServiceHandler(cmServer, interceptors))
-    mux.Handle(safetymapv1connect.NewUserProfileServiceHandler(upServer, interceptors))
-    mux.HandleFunc("/healthz", healthHandler)
+    siPath, siHandler := safetymapv1connect.NewSafetyIncidentServiceHandler(siServer, interceptors)
+    cmPath, cmHandler := safetymapv1connect.NewCrimeMapServiceHandler(cmServer, interceptors)
+    upPath, upHandler := safetymapv1connect.NewUserProfileServiceHandler(upServer, interceptors)
+
+    handlers := []connectserver.HandlerRegistration{
+        {Path: siPath, Handler: siHandler},
+        {Path: cmPath, Handler: cmHandler},
+        {Path: upPath, Handler: upHandler},
+    }
+    probers := []connectserver.Prober{
+        // CMS / Firestore / Firebase Auth の readiness prober を追加
+    }
 
     // HTTP/2 server
-    srv := connectserver.New(connectserver.Config{Port: cfg.Port}, mux, logger)
-    return srv.Serve(ctx)
+    srv := connectserver.New(connectserver.Config{Port: cfg.Port}, handlers, probers)
+    return srv.Start(ctx)
 }
 ```
 
@@ -544,7 +561,7 @@ Firestore users/{uid}:
 ```
 
 - U-BFF: Create / Update / ArrayUnion / ArrayRemove
-- U-NTF: Read (purchase query) + ArrayRemove on fcm_tokens のみ
+- U-NTF: Read (per-country broadcast query) + ArrayRemove on fcm_tokens のみ
 - スキーマ変更時は両 Unit の proto `UserProfile` / `NotificationPreference` + struct tag を同期
 
 ### 3.4 Error → Connect Code 自動変換（Q6 [A]）

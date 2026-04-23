@@ -1307,3 +1307,18 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: Plan ファイル更新、PR 作成へ。
 
 ---
+
+## U-BFF Design PR #44 Copilot レビュー対応（後追い、PR #45 内で修正）
+
+**Timestamp**: 2026-04-24T00:25:00Z
+**User Input**: "このPRの中で以下のPRでついたコメントも直してくれますか https://github.com/soneda-yuya/reearth-homework/pull/44"
+**AI Response**: PR #44 (U-BFF Design) に Copilot コメント 5 件あり。PR #45 (Infrastructure Design Plan) 内で design doc を修正:
+
+1. **L153 (Pagination cursor)**: `SafetyIncidentReader.List` / `Search` の戻り値を `(items []SafetyIncident, nextCursor string, err error)` に変更。§1.1 の "filter + cursor" 前提のページングが成立するようにした。`Aggregator.Choropleth` / `Heatmap` の呼び出しも `items, _, err := ...` に更新（集計系は単発読み切り）。`§1.4.1` に UseCase が cursor を RPC レイヤに伝播する旨を追記。
+2. **L341 (AuthInterceptor missing token)**: `errs.Wrap(..., err)` の `err` は未設定（named return のゼロ値= nil）で Wrap 実装次第では nil が返る可能性があったため、`errors.New("missing bearer token")` を作って Wrap するよう修正。`context.Context` / `connect.AnyRequest` / `connect.AnyResponse` の完全型も追加。
+3. **L454/L459 (Composition root API 不一致)**: `mux.Handle(Handler())` は `(path, http.Handler)` を返す Connect 生成 Handler をラップできないため、`path, h := ...Handler(...)` で destructure する形に修正。`connectserver.New(cfg, mux, logger)` / `Serve(ctx)` は実在の API `connectserver.New(cfg, []HandlerRegistration, []Prober)` / `Start(ctx)` に一致させた。interceptors は handler 構築時に適用する必要がある旨をコメントで明記。
+4. **L547 (purchase query 誤記)**: "Read (purchase query)" → "Read (per-country broadcast query)" に訂正（U-NTF の query パターンに合わせた意味）。
+
+**Context**: PR #44 は merged 済みだが、指摘されたドキュメントレベルの誤りを PR #45 内で修正。コード生成段階で正しい signature / API を参照できるようにする。
+
+---
