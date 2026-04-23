@@ -845,3 +845,26 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成してテンプレートレビュー。承認後 U-ING (Ingestion Unit) へ進む。
 
 ---
+
+## U-CSS Build and Test Merged + U-ING Design Plan Start
+
+**Timestamp**: 2026-04-23T02:00:00Z
+**User Input**: "マージしてください" (PR #27 merge) → "大丈夫です。進めながら決めましょう" (U-ING に進む選択、詳細は plan で議論)
+**AI Actions**:
+1. PR #27 squash merge (commit `abc4f71`)。U-CSS Unit 構造上完了 (Design / Infra / Code / Build & Test runbook 全て揃い)。
+2. Feature branch `feature/u-ing-design-plan` を切って `aidlc-docs/construction/plans/U-ING-design-plan.md` を作成。
+3. U-ING 固有の判断ポイント 9 問を用意:
+   - Q1: 取り込みモード (00A.xml / newarrivalA.xml / 両方)
+   - Q2: ポーリング間隔 (5min / 1min / 15min)
+   - Q3: 重複排除戦略 (CMS lookup / Firestore キャッシュ / in-memory)
+   - Q4: LLM プロンプト戦略 (1 件ずつ / バッチ / few-shot)
+   - Q5: ジオコーディング失敗時のフォールバック (国 centroid / skip / null geometry)
+   - Q6: Pub/Sub publish タイミング (1 件ずつ / バッチ末 / publish なし)
+   - Q7: エラーハンドリング (skip + 構造化ログ / fail-fast / Job retry)
+   - Q8: Rate Limit (app side ratelimit / 並列度のみ / 完全直列)
+   - Q9: テスト戦略 (Domain PBT + fake / + integration / mock のみ)
+4. aidlc-state.md を「U-ING Minimal 合本版 計画作成、回答待ち」に更新。U-CSS Build and Test を [x] に。
+
+**Context**: PR を作成して計画レビュー依頼。回答後に U-ING-design.md (合本版) を生成する。
+
+---
