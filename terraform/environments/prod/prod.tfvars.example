@@ -1,5 +1,5 @@
 # Example tfvars for the prod environment.
-# Copy to prod.tfvars (gitignored) and fill in the actual values.
+# Copy to prod.tfvars and fill in the actual values.
 #
 # NOTE: tfstate bucket + WIF + GitHub secrets are assumed to be provisioned
 # already. See aidlc-docs/construction/shared-infrastructure.md for bootstrap
