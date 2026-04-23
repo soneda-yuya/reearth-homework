@@ -98,8 +98,11 @@ func projectDTOTo(dto *cmsx.ProjectDTO) *application.RemoteProject {
 
 func modelDTOTo(dto *cmsx.ModelDTO) *application.RemoteModel {
 	out := &application.RemoteModel{ID: dto.ID, Alias: dto.Alias, Name: dto.Name}
-	for _, f := range dto.Fields {
-		out.Fields = append(out.Fields, *fieldDTOTo(&f))
+	// Iterate by index and take the slice element address explicitly. Even
+	// with Go 1.22's per-iteration loop variable, &elem in a `for _, elem`
+	// is a recurring source of bugs in code review, so we avoid the shape.
+	for i := range dto.Fields {
+		out.Fields = append(out.Fields, *fieldDTOTo(&dto.Fields[i]))
 	}
 	return out
 }

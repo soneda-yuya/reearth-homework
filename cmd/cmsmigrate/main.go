@@ -30,7 +30,18 @@ type cmsmigrateConfig struct {
 	CMSIntegrationToken string `envconfig:"CMSMIGRATE_CMS_INTEGRATION_TOKEN" required:"true"`
 }
 
+// main is intentionally tiny: it delegates to run() and converts a non-nil
+// error into a non-zero exit code. Putting the work in run() ensures that
+// every defer (observability flush, client.Close) actually fires before the
+// process leaves — os.Exit inside main would skip them.
 func main() {
+	if err := run(); err != nil {
+		slog.Error("cmsmigrate failed", "err", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	var cfg cmsmigrateConfig
 	config.MustLoad(&cfg)
 
@@ -44,8 +55,7 @@ func main() {
 		ExporterKind: cfg.OTelExporter,
 	})
 	if err != nil {
-		slog.Error("observability setup failed", "err", err)
-		os.Exit(1)
+		return err
 	}
 	defer func() {
 		flushCtx, flushCancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -84,7 +94,7 @@ func main() {
 			"app.cmsmigrate.phase", "failed",
 			"err", err,
 		)
-		os.Exit(1)
+		return err
 	}
 
 	logger.InfoContext(ctx, "cmsmigrate finished",
@@ -94,4 +104,5 @@ func main() {
 		"fields_created", result.FieldsCreated,
 		"drift_warnings", len(result.DriftWarnings),
 	)
+	return nil
 }
