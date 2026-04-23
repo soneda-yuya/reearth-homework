@@ -87,7 +87,8 @@ func (r *Reader) Get(ctx context.Context, keyCd string) (*domain.SafetyIncident,
 }
 
 // Search performs a keyword query over the incident corpus. Other filters
-// in SearchFilter narrow the result set alongside the keyword.
+// in SearchFilter narrow the result set alongside the keyword (area, country,
+// info_types, and the leave_date window).
 func (r *Reader) Search(ctx context.Context, filter domain.SearchFilter) ([]domain.SafetyIncident, string, error) {
 	q := cmsx.ListItemsQuery{
 		Filters:   map[string]string{},
@@ -101,6 +102,12 @@ func (r *Reader) Search(ctx context.Context, filter domain.SearchFilter) ([]doma
 	}
 	if filter.CountryCd != "" {
 		q.Filters["country_cd"] = filter.CountryCd
+	}
+	if !filter.LeaveFrom.IsZero() {
+		q.Filters["leave_from"] = filter.LeaveFrom.UTC().Format(time.RFC3339)
+	}
+	if !filter.LeaveTo.IsZero() {
+		q.Filters["leave_to"] = filter.LeaveTo.UTC().Format(time.RFC3339)
 	}
 	res, err := r.client.SearchItems(ctx, r.modelID, q)
 	if err != nil {

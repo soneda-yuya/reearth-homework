@@ -131,6 +131,12 @@ func (r *FirestoreProfileRepository) ToggleFavoriteCountry(ctx context.Context, 
 		update = firestore.Update{Path: "favorite_country_cds", Value: firestore.ArrayUnion(countryCd)}
 	}
 	if _, err := r.client.Collection(r.collection).Doc(uid).Update(ctx, []firestore.Update{update}); err != nil {
+		// If the doc was deleted between the Get above and this Update,
+		// surface NotFound for consistency with UpdateNotificationPreference
+		// and RegisterFcmToken.
+		if status.Code(err) == codes.NotFound {
+			return errs.Wrap("user.firestore.toggle_favorite", errs.KindNotFound, err)
+		}
 		return errs.Wrap("user.firestore.toggle_favorite", errs.KindExternal, err)
 	}
 	return nil

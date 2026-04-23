@@ -42,3 +42,15 @@ func TestUIDFromAbsent(t *testing.T) {
 		t.Error("ctx without WithUID must report ok=false")
 	}
 }
+
+func TestWithUIDNilContext(t *testing.T) {
+	t.Parallel()
+	// Defensive nil-guard: WithUID on a nil ctx must not panic via
+	// context.WithValue. The returned context should still carry the uid.
+	var ctx context.Context
+	got := authctx.WithUID(ctx, "uid-ok") //nolint:staticcheck // SA1012: exercising the nil guard
+	uid, ok := authctx.UIDFrom(got)
+	if !ok || uid != "uid-ok" {
+		t.Errorf("WithUID(nil) = (%q, %v); want (uid-ok, true)", uid, ok)
+	}
+}

@@ -68,20 +68,15 @@ func (s *SafetyIncidentServer) GetSafetyIncident(
 }
 
 // SearchSafetyIncidents returns a page of keyword-matching incidents. The
-// RPC currently reuses SafetyIncidentFilter as the filter container with the
-// query carried on cursor for now; until a dedicated query field is added to
-// proto we pull it from Filter.Cursor only when it starts with "q=".
-// TODO: add `string query` to SearchSafetyIncidentsRequest in proto.
+// filter carries area/country/info_types/date-range/cursor; the sibling
+// `query` field carries the keyword, so the two concerns do not collide on
+// one wire field.
 func (s *SafetyIncidentServer) SearchSafetyIncidents(
 	ctx context.Context,
 	req *connect.Request[overseasmapv1.SearchSafetyIncidentsRequest],
 ) (*connect.Response[overseasmapv1.SearchSafetyIncidentsResponse], error) {
-	filter := req.Msg.GetFilter()
-	// SearchSafetyIncidentsRequest has no explicit query field yet (proto
-	// reuses SafetyIncidentFilter). Use cursor for now as a keyword carrier
-	// so the handler is wired end-to-end; the proto will get a real field.
-	query := filter.GetCursor()
-	items, next, err := s.search.Execute(ctx, searchFilterFromProto(filter, query))
+	items, next, err := s.search.Execute(ctx,
+		searchFilterFromProto(req.Msg.GetFilter(), req.Msg.GetQuery()))
 	if err != nil {
 		return nil, err
 	}
