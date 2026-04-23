@@ -897,3 +897,23 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成してレビュー依頼。承認後 U-ING Infrastructure Design へ進む。
 
 ---
+
+## U-ING Design Merged + Infrastructure Design Plan Start
+
+**Timestamp**: 2026-04-23T03:00:00Z
+**User Input**: "マージしましょう！承認します。" (PR #29 merge)
+**AI Actions**:
+1. PR #29 を squash merge (commit `0ddeeb8`)。U-ING Minimal 合本版 design 完了。
+2. terraform/modules/ingestion/ の現状を確認: U-PLT で Cloud Run Job + Cloud Scheduler + 3 Secret binding + Pub/Sub publisher IAM が既に揃っている (U-CSS よりも完成度高い)。
+3. Feature branch `feature/u-ing-infra-plan` を切って `construction/plans/U-ING-infrastructure-design-plan.md` を作成。
+4. U-ING 固有の差分確認に絞った 5 質問を用意:
+   - Q1: Cloud Run Job max_retries (0 推奨、5 分後の Scheduler tick が事実上 retry を担う)
+   - Q2: Scheduler 重複実行抑止 (何もしない推奨、idempotent upsert に依存)
+   - Q3: INGESTION_MODE デフォルト (Terraform で incremental 固定、initial は実行時 override)
+   - Q4: Cloud Run Job リソース (現状 1 CPU / 512Mi 維持)
+   - Q5: 環境変数の Terraform 反映粒度 (重要なものだけ Terraform、tuning は envconfig default)
+5. aidlc-state.md を「Infrastructure Design 計画作成、回答待ち」に更新。
+
+**Context**: PR を作成して計画レビュー。回答後に Infrastructure Design 本編 (deployment-architecture.md + terraform-plan.md) を生成する。
+
+---
