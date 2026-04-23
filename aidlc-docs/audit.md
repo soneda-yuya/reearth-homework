@@ -1512,3 +1512,24 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: U-BFF Code Generation 全 Phase 完了。PR B を作成し、承認後 Build and Test へ。
 
 ---
+
+## U-BFF Code Generation PR B #50 マージ + Build and Test 着手
+
+**Timestamp**: 2026-04-24T04:00:00Z
+**User Input**: "マージしました"
+**AI Response**: PR #50 (U-BFF Code Generation PR B、Copilot 1 round 対応含む) がマージされたことを確認。main を pull、branch 削除。`feature/u-bff-build-test` branch を作成し、`construction/U-BFF/build-and-test/runbook.md` を生成。
+
+**runbook 構成** (U-NTF runbook パターンを踏襲):
+- §1 目的: 11 項目の検証ポイント (AuthInterceptor / SafetyIncident 5 RPC / CrimeMap 2 RPC / UserProfile 4 RPC / Error mask / cursor / Haversine / SIGTERM)
+- §2 事前準備: Firebase Anonymous Auth、ID Token の curl 取得手順、.env テンプレート
+- §3 実行手順: 起動確認 → AuthInterceptor → lazy create → 4 RPC × 3 Service → prod mask → SIGTERM drain → prod 反映
+- §4 トラブルシューティング: CMS alias 不在 / Firebase ADC / CMS 5xx / GetProfile NotFound / ListNearby 0 件 / UpdateNotificationPreference NotFound
+- §5 観測ポイント: SLO p95 < 500ms、auth_failure、5xx 率、/readyz
+- §6 実行記録: 3 項目プレースホルダー
+- §7 関連ドキュメント
+
+**Status**: Template only — 実 CMS / Firebase 疎通は Flutter (U-APP) が実装され次第、運用フェーズで実施
+
+**Context**: U-BFF の全 5 サブステージ完了見込み。U-APP (Flutter、別レポ) + 全体 Build and Test が残りの作業。
+
+---
