@@ -91,6 +91,13 @@ func TestValidate_RuleViolations(t *testing.T) {
 			wantText: "R6",
 		},
 		{
+			name: "R6 field type out of range",
+			mutate: func(s *domain.SchemaDefinition) {
+				s.Models[0].Fields[1].Type = domain.FieldType(999)
+			},
+			wantText: "R6",
+		},
+		{
 			name: "R7 missing key alias",
 			mutate: func(s *domain.SchemaDefinition) {
 				s.Models[0].KeyFieldAlias = "nope"

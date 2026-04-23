@@ -154,10 +154,15 @@ func (c *Client) doJSON(ctx context.Context, method, u string, in, out any) erro
 	return c.doOnce(ctx, method, u, in, out)
 }
 
-// doJSONRetry is for idempotent reads (GET). Transient 5xx / 429 are retried
-// via retry.Do with the default policy (3 attempts, 500ms initial).
+// doJSONRetry is for idempotent reads. Transient 5xx / 429 are retried via
+// retry.Do with the configured policy. The method must be GET so that a
+// future caller cannot accidentally retry a non-idempotent verb.
 func (c *Client) doJSONRetry(ctx context.Context, method, u string, in, out any) error {
-	return retry.Do(ctx, retry.DefaultPolicy, func(ctx context.Context) error {
+	if method != http.MethodGet {
+		return errs.Wrap("cmsx.retry_method", errs.KindInternal,
+			fmt.Errorf("doJSONRetry only supports %s, got %s", http.MethodGet, method))
+	}
+	return retry.Do(ctx, c.cfg.RetryPolicy, func(ctx context.Context) error {
 		return c.doOnce(ctx, method, u, in, out)
 	})
 }
@@ -193,7 +198,13 @@ func (c *Client) doOnce(ctx context.Context, method, u string, in, out any) erro
 		return nil
 	}
 
-	respBody, _ := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		// Body read failures are network-level (truncated transfer, peer
+		// reset mid-stream); classify as transient so GET retries can pick
+		// up but POST surfaces immediately as the original error.
+		return errs.Wrap("cmsx.read_body", errs.KindExternal, err)
+	}
 	apiErr := &apiError{method: method, url: u, status: resp.StatusCode, body: string(respBody)}
 
 	switch {

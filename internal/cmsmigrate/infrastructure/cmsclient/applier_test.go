@@ -50,32 +50,15 @@ func (s *stubClient) FindFieldByAlias(_ context.Context, modelID, alias string) 
 }
 
 func (s *stubClient) CreateField(_ context.Context, modelID string, def domain.FieldDefinition) (*cmsx.FieldDTO, error) {
+	// FieldType.String() is the canonical wire name (same one cmsx serialises
+	// over HTTP), so the stub piggybacks on it instead of duplicating the
+	// mapping table.
 	dto := &cmsx.FieldDTO{
-		ID: "f-" + def.Alias, Alias: def.Alias, Type: fieldTypeToAPI(def.Type),
+		ID: "f-" + def.Alias, Alias: def.Alias, Type: def.Type.String(),
 		Required: def.Required, Unique: def.Unique, Multiple: def.Multiple,
 	}
 	s.fields[modelID+"/"+def.Alias] = dto
 	return dto, nil
-}
-
-// Mirrors cmsx.fieldTypeToAPI (unexported) — the adapter test needs an
-// explicit mapping and I prefer to duplicate rather than export the helper.
-func fieldTypeToAPI(t domain.FieldType) string {
-	switch t {
-	case domain.FieldTypeText:
-		return "text"
-	case domain.FieldTypeTextArea:
-		return "textArea"
-	case domain.FieldTypeURL:
-		return "url"
-	case domain.FieldTypeDate:
-		return "date"
-	case domain.FieldTypeSelect:
-		return "select"
-	case domain.FieldTypeGeometryObject:
-		return "geometryObject"
-	}
-	return ""
 }
 
 func TestAdapter_FindProject_MissReturnsNilNil(t *testing.T) {

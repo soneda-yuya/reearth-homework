@@ -8,15 +8,23 @@ import (
 	"context"
 	"net/http"
 	"time"
+
+	"github.com/soneda-yuya/reearth-homework/internal/platform/retry"
 )
 
 // Config describes how to reach a reearth-cms instance. Token is the
 // Integration API bearer token; it is read from Secret Manager at startup.
+//
+// RetryPolicy controls the exponential backoff used by GET-flavoured calls.
+// Leaving the zero value defers to retry.DefaultPolicy (3 attempts,
+// 500ms initial, ±25% jitter). Tests substitute a fast policy to keep the
+// suite fast; production should leave it zero.
 type Config struct {
 	BaseURL     string
 	WorkspaceID string
 	Token       string
 	Timeout     time.Duration
+	RetryPolicy retry.Policy
 }
 
 // Client is the REST client. Methods are added in the units that exercise
@@ -32,6 +40,9 @@ type Client struct {
 func NewClient(cfg Config) *Client {
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 30 * time.Second
+	}
+	if cfg.RetryPolicy == (retry.Policy{}) {
+		cfg.RetryPolicy = retry.DefaultPolicy
 	}
 	return &Client{
 		cfg:  cfg,

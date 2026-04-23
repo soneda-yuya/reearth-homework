@@ -80,6 +80,33 @@ func TestSafetyMapSchema_MatchesProto(t *testing.T) {
 	}
 }
 
+func TestFieldType_IsValid(t *testing.T) {
+	t.Parallel()
+	valid := []domain.FieldType{
+		domain.FieldTypeText,
+		domain.FieldTypeTextArea,
+		domain.FieldTypeURL,
+		domain.FieldTypeDate,
+		domain.FieldTypeSelect,
+		domain.FieldTypeGeometryObject,
+	}
+	for _, v := range valid {
+		if !v.IsValid() {
+			t.Errorf("FieldType(%d) should be valid", int(v))
+		}
+	}
+	invalid := []domain.FieldType{
+		domain.FieldTypeUnspecified,
+		domain.FieldType(999),
+		domain.FieldType(-1),
+	}
+	for _, v := range invalid {
+		if v.IsValid() {
+			t.Errorf("FieldType(%d) should be invalid", int(v))
+		}
+	}
+}
+
 func TestFieldType_String(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

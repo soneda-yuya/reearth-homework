@@ -54,3 +54,20 @@ func (t FieldType) String() string {
 		return fmt.Sprintf("unspecified(%d)", int(t))
 	}
 }
+
+// IsValid reports whether the value is one of the declared FieldType
+// constants. Validate uses this to reject arbitrary integer casts (e.g.
+// `FieldType(999)`) that would otherwise pass the simple zero-value check.
+func (t FieldType) IsValid() bool {
+	switch t {
+	case FieldTypeText,
+		FieldTypeTextArea,
+		FieldTypeURL,
+		FieldTypeDate,
+		FieldTypeSelect,
+		FieldTypeGeometryObject:
+		return true
+	default:
+		return false
+	}
+}

@@ -65,6 +65,10 @@ type createFieldBody struct {
 // fieldTypeToAPI converts a domain.FieldType to the string used on the wire.
 // The mapping is explicit rather than relying on FieldType.String so that a
 // future edit to that method cannot silently change the API contract.
+//
+// Unsupported values panic on purpose: domain.SchemaDefinition.Validate is
+// expected to reject them upstream (R6 + FieldType.IsValid), so reaching this
+// branch indicates a programming error rather than user input.
 func fieldTypeToAPI(t domain.FieldType) string {
 	switch t {
 	case domain.FieldTypeText:
@@ -80,7 +84,7 @@ func fieldTypeToAPI(t domain.FieldType) string {
 	case domain.FieldTypeGeometryObject:
 		return "geometryObject"
 	default:
-		return ""
+		panic(fmt.Sprintf("cmsx: unsupported field type: %s", t))
 	}
 }
 

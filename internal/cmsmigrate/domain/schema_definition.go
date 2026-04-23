@@ -126,9 +126,9 @@ func validateModel(m ModelDefinition) []error {
 		}
 		fieldAliases[f.Alias] = f
 
-		if f.Type == FieldTypeUnspecified {
+		if !f.Type.IsValid() {
 			violations = append(violations, fmt.Errorf(
-				"R6: field %q (model %q) has no type", f.Alias, m.Alias,
+				"R6: field %q (model %q) has invalid type %s", f.Alias, m.Alias, f.Type,
 			))
 		}
 	}
