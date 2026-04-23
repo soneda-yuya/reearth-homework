@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -192,7 +191,16 @@ func TestFindProjectByAlias_TransientThenSuccess(t *testing.T) {
 
 func TestFindFieldByAlias_ParsesSchema(t *testing.T) {
 	t.Parallel()
-	c, srv := newClient(func(w http.ResponseWriter, _ *http.Request) {
+	c, srv := newClient(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method = %s, want GET", r.Method)
+		}
+		if got, want := r.URL.Path, "/api/models/m-1"; got != want {
+			t.Errorf("path = %q want %q", got, want)
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer tok" {
+			t.Errorf("auth header = %q", got)
+		}
 		_, _ = w.Write([]byte(`{
 			"id":"m-1","key":"thing","name":"Thing",
 			"schema":[
@@ -223,9 +231,10 @@ func TestFindFieldByAlias_ParsesSchema(t *testing.T) {
 	}
 }
 
-// TestRetryPolicy_Injectable ensures Config.RetryPolicy is honoured. We
-// configure a 1-attempt policy and a server that always 500s; without retry
-// injection the request would sleep through DefaultPolicy's 500ms backoff.
+// TestRetryPolicy_Injectable ensures Config.RetryPolicy is honoured. With
+// MaxAttempts = 1 the client must make exactly one request even if the
+// server keeps returning 503. The contract is observed via the hit counter
+// (deterministic) rather than wall-clock timing (loaded CI runners).
 func TestRetryPolicy_Injectable(t *testing.T) {
 	t.Parallel()
 	var hits atomic.Int32
@@ -243,18 +252,12 @@ func TestRetryPolicy_Injectable(t *testing.T) {
 		RetryPolicy: retry.Policy{MaxAttempts: 1, Initial: 1 * time.Millisecond, Multiplier: 2.0},
 	})
 
-	start := time.Now()
 	_, err := c.FindProjectByAlias(context.Background(), "demo")
-	elapsed := time.Since(start)
-
 	if err == nil {
 		t.Fatal("expected error from 503")
 	}
 	if got := hits.Load(); got != 1 {
 		t.Errorf("expected exactly 1 attempt with MaxAttempts=1, got %d", got)
-	}
-	if elapsed > 200*time.Millisecond {
-		t.Errorf("took %s — injected policy did not take effect", elapsed)
 	}
 }
 
@@ -356,8 +359,11 @@ func TestCreateField_SerializesType(t *testing.T) {
 	t.Parallel()
 	var body map[string]any
 	c, srv := newClient(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.URL.Path, "/fields") {
-			t.Errorf("path = %q", r.URL.Path)
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		if got, want := r.URL.Path, "/api/models/m-1/fields"; got != want {
+			t.Errorf("path = %q want %q", got, want)
 		}
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
