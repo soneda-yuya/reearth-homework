@@ -131,6 +131,122 @@ func TestExecute_FailFastOnCreateFieldError(t *testing.T) {
 	}
 }
 
+func TestExecute_ProjectCreateConflict_RecoversByRefetch(t *testing.T) {
+	t.Parallel()
+	fake := newFakeApplier()
+	def := domain.SafetyMapSchema()
+
+	// Plant a racing project that "appeared" between FindProject and
+	// CreateProject. The racing record carries a distinct ID we can assert
+	// the use case picked up.
+	fake.raceCreateProject = def.Project.Alias
+	fake.raceCreateProjectSeed = &application.RemoteProject{
+		ID: "p-raced", Alias: def.Project.Alias, Name: def.Project.Name,
+	}
+
+	usecase := application.NewEnsureSchemaUseCase(fake, nil, nil, nil)
+	res, err := usecase.Execute(context.Background(), application.EnsureSchemaInput{Definition: def})
+	if err != nil {
+		t.Fatalf("expected recovery, got error: %v", err)
+	}
+	if res.ProjectCreated {
+		t.Errorf("ProjectCreated must be false when create raced; got true")
+	}
+	// Models / fields should still land under the raced project ID so the
+	// downstream FindModel call uses "p-raced/<alias>" as the lookup key.
+	if _, ok := fake.models["p-raced/safety-incident"]; !ok {
+		t.Errorf("model should have been created under the raced project ID")
+	}
+}
+
+func TestExecute_ModelCreateConflict_RecoversByRefetch(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fake := newFakeApplier()
+	def := domain.SafetyMapSchema()
+
+	// Pre-create the project so the use case proceeds to model creation.
+	if _, err := fake.CreateProject(ctx, def.Project); err != nil {
+		t.Fatalf("setup project: %v", err)
+	}
+	projectID := fake.projects[def.Project.Alias].ID
+
+	fake.raceCreateModel = def.Models[0].Alias
+	fake.raceCreateModelSeed = &application.RemoteModel{
+		ID: "m-raced", Alias: def.Models[0].Alias, Name: def.Models[0].Name,
+	}
+	fake.calls = nil
+
+	usecase := application.NewEnsureSchemaUseCase(fake, nil, nil, nil)
+	res, err := usecase.Execute(ctx, application.EnsureSchemaInput{Definition: def})
+	if err != nil {
+		t.Fatalf("expected recovery, got error: %v", err)
+	}
+	if len(res.ModelsCreated) != 0 {
+		t.Errorf("ModelsCreated must be empty on race; got %v", res.ModelsCreated)
+	}
+	// 19 fields created under the raced model ID.
+	if got := fake.countCalls("CreateField:m-raced/"); got != 19 {
+		t.Errorf("expected 19 CreateField calls under raced model, got %d", got)
+	}
+	if _ = projectID; len(res.FieldsCreated) != 19 {
+		t.Errorf("FieldsCreated count = %d, want 19", len(res.FieldsCreated))
+	}
+}
+
+func TestExecute_FieldCreateConflict_RecordsDriftIfShapeDiffers(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fake := newFakeApplier()
+
+	def := domain.SchemaDefinition{
+		Project: domain.ProjectDefinition{Alias: "demo", Name: "D"},
+		Models: []domain.ModelDefinition{{
+			Alias:         "m",
+			Name:          "M",
+			KeyFieldAlias: "id",
+			Fields: []domain.FieldDefinition{
+				{Alias: "id", Name: "ID", Type: domain.FieldTypeText, Required: true, Unique: true},
+				{Alias: "body", Name: "Body", Type: domain.FieldTypeTextArea},
+			},
+		}},
+	}
+	if _, err := fake.CreateProject(ctx, def.Project); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	projectID := fake.projects[def.Project.Alias].ID
+	if _, err := fake.CreateModel(ctx, projectID, def.Models[0]); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	modelID := fake.models[projectID+"/m"].ID
+
+	// Pre-create the key field so we can target the race on "body".
+	fake.fields[modelID+"/id"] = &application.RemoteField{
+		ID: "f-id", Alias: "id", Type: domain.FieldTypeText, Required: true, Unique: true,
+	}
+	// Plant a raced "body" field with a *drifting* type (Text instead of TextArea).
+	fake.raceCreateField = "body"
+	fake.raceCreateFieldSeed = &application.RemoteField{
+		ID: "f-body-raced", Alias: "body", Type: domain.FieldTypeText,
+	}
+	fake.calls = nil
+
+	usecase := application.NewEnsureSchemaUseCase(fake, nil, nil, nil)
+	res, err := usecase.Execute(ctx, application.EnsureSchemaInput{Definition: def})
+	if err != nil {
+		t.Fatalf("expected recovery, got error: %v", err)
+	}
+	if len(res.FieldsCreated) != 0 {
+		t.Errorf("FieldsCreated must be empty on race; got %v", res.FieldsCreated)
+	}
+	if len(res.DriftWarnings) != 1 {
+		t.Fatalf("expected 1 drift warning (raced field shape mismatch), got %d", len(res.DriftWarnings))
+	}
+	if res.DriftWarnings[0].Resource != "Field:m.body" {
+		t.Errorf("drift Resource = %q", res.DriftWarnings[0].Resource)
+	}
+}
+
 func TestExecute_ValidateFailsWithInvalidDefinition(t *testing.T) {
 	t.Parallel()
 	fake := newFakeApplier()

@@ -127,6 +127,19 @@ func (u *EnsureSchemaUseCase) ensureProject(ctx context.Context, def domain.Proj
 
 	created, err := u.applier.CreateProject(ctx, def)
 	if err != nil {
+		// 409 means another writer raced us between FindProject and
+		// CreateProject. Refetch and treat the resource as existing — this
+		// keeps the "idempotent CREATE" contract intact even under
+		// concurrent runs (NFR-CSS-REL-01).
+		if errs.KindOf(err) == errs.KindConflict {
+			if existing, findErr := u.applier.FindProject(ctx, def.Alias); findErr == nil && existing != nil {
+				u.logger.InfoContext(ctx, "project exists after create conflict",
+					"app.cmsmigrate.phase", "create-project",
+					"project.alias", def.Alias,
+				)
+				return existing, nil
+			}
+		}
 		return nil, errs.Wrap("cmsmigrate.application.CreateProject", errs.KindOf(err), err)
 	}
 	result.ProjectCreated = true
@@ -144,32 +157,9 @@ func (u *EnsureSchemaUseCase) ensureModel(ctx context.Context, projectID string,
 	ctx, span := u.tracer.Start(ctx, "cmsmigrate.EnsureModel", trace.WithAttributes(attribute.String("model.alias", def.Alias)))
 	defer span.End()
 
-	existing, err := u.applier.FindModel(ctx, projectID, def.Alias)
+	modelID, err := u.resolveModelID(ctx, projectID, def, result)
 	if err != nil {
-		return errs.Wrap("cmsmigrate.application.FindModel", errs.KindOf(err), err)
-	}
-
-	var modelID string
-	if existing == nil {
-		created, err := u.applier.CreateModel(ctx, projectID, def)
-		if err != nil {
-			return errs.Wrap("cmsmigrate.application.CreateModel", errs.KindOf(err), err)
-		}
-		result.ModelsCreated = append(result.ModelsCreated, def.Alias)
-		if u.modelCreated != nil {
-			u.modelCreated.Add(ctx, 1, metric.WithAttributes(attribute.String("model.alias", def.Alias)))
-		}
-		u.logger.InfoContext(ctx, "model created",
-			"app.cmsmigrate.phase", "create-model",
-			"model.alias", def.Alias,
-		)
-		modelID = created.ID
-	} else {
-		u.logger.InfoContext(ctx, "model exists",
-			"app.cmsmigrate.phase", "find-model",
-			"model.alias", def.Alias,
-		)
-		modelID = existing.ID
+		return err
 	}
 
 	for _, f := range def.Fields {
@@ -178,6 +168,47 @@ func (u *EnsureSchemaUseCase) ensureModel(ctx context.Context, projectID string,
 		}
 	}
 	return nil
+}
+
+// resolveModelID returns the CMS-side ID of the model named by def, creating
+// it if absent. A 409 on CreateModel is treated as "another writer beat us"
+// and recovered via FindModel — this preserves the idempotent contract under
+// concurrent runs without claiming the create as our own.
+func (u *EnsureSchemaUseCase) resolveModelID(ctx context.Context, projectID string, def domain.ModelDefinition, result *EnsureSchemaResult) (string, error) {
+	existing, err := u.applier.FindModel(ctx, projectID, def.Alias)
+	if err != nil {
+		return "", errs.Wrap("cmsmigrate.application.FindModel", errs.KindOf(err), err)
+	}
+	if existing != nil {
+		u.logger.InfoContext(ctx, "model exists",
+			"app.cmsmigrate.phase", "find-model",
+			"model.alias", def.Alias,
+		)
+		return existing.ID, nil
+	}
+
+	created, err := u.applier.CreateModel(ctx, projectID, def)
+	if err != nil {
+		if errs.KindOf(err) == errs.KindConflict {
+			if refetched, findErr := u.applier.FindModel(ctx, projectID, def.Alias); findErr == nil && refetched != nil {
+				u.logger.InfoContext(ctx, "model exists after create conflict",
+					"app.cmsmigrate.phase", "create-model",
+					"model.alias", def.Alias,
+				)
+				return refetched.ID, nil
+			}
+		}
+		return "", errs.Wrap("cmsmigrate.application.CreateModel", errs.KindOf(err), err)
+	}
+	result.ModelsCreated = append(result.ModelsCreated, def.Alias)
+	if u.modelCreated != nil {
+		u.modelCreated.Add(ctx, 1, metric.WithAttributes(attribute.String("model.alias", def.Alias)))
+	}
+	u.logger.InfoContext(ctx, "model created",
+		"app.cmsmigrate.phase", "create-model",
+		"model.alias", def.Alias,
+	)
+	return created.ID, nil
 }
 
 func (u *EnsureSchemaUseCase) ensureField(ctx context.Context, modelID, modelAlias string, def domain.FieldDefinition, result *EnsureSchemaResult) error {
@@ -192,18 +223,25 @@ func (u *EnsureSchemaUseCase) ensureField(ctx context.Context, modelID, modelAli
 		return errs.Wrap("cmsmigrate.application.FindField", errs.KindOf(err), err)
 	}
 	if existing != nil {
-		if warn := detectFieldDrift(modelAlias, *existing, def); warn != nil {
-			result.DriftWarnings = append(result.DriftWarnings, *warn)
-			if u.driftDetected != nil {
-				u.driftDetected.Add(ctx, 1, metric.WithAttributes(
-					attribute.String("resource", warn.Resource),
-				))
-			}
-		}
+		u.recordDriftIfAny(ctx, modelAlias, *existing, def, result)
 		return nil
 	}
 
 	if _, err := u.applier.CreateField(ctx, modelID, def); err != nil {
+		// 409: another writer added the field after our FindField. Refetch
+		// and treat it as existing — including the drift check, so a racing
+		// writer's diverging shape still surfaces in DriftWarnings.
+		if errs.KindOf(err) == errs.KindConflict {
+			if refetched, findErr := u.applier.FindField(ctx, modelID, def.Alias); findErr == nil && refetched != nil {
+				u.logger.InfoContext(ctx, "field exists after create conflict",
+					"app.cmsmigrate.phase", "create-field",
+					"model.alias", modelAlias,
+					"field.alias", def.Alias,
+				)
+				u.recordDriftIfAny(ctx, modelAlias, *refetched, def, result)
+				return nil
+			}
+		}
 		u.logger.ErrorContext(ctx, "create field failed",
 			"app.cmsmigrate.phase", "create-field",
 			"model.alias", modelAlias,
@@ -221,6 +259,19 @@ func (u *EnsureSchemaUseCase) ensureField(ctx context.Context, modelID, modelAli
 		))
 	}
 	return nil
+}
+
+func (u *EnsureSchemaUseCase) recordDriftIfAny(ctx context.Context, modelAlias string, got RemoteField, want domain.FieldDefinition, result *EnsureSchemaResult) {
+	warn := detectFieldDrift(modelAlias, got, want)
+	if warn == nil {
+		return
+	}
+	result.DriftWarnings = append(result.DriftWarnings, *warn)
+	if u.driftDetected != nil {
+		u.driftDetected.Add(ctx, 1, metric.WithAttributes(
+			attribute.String("resource", warn.Resource),
+		))
+	}
 }
 
 func (u *EnsureSchemaUseCase) flushDriftWarnings(ctx context.Context, warnings []DriftWarning) {

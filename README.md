@@ -107,13 +107,15 @@ CMSMIGRATE_CMS_WORKSPACE_ID=wkp_XXXXXXXX
 CMSMIGRATE_CMS_INTEGRATION_TOKEN=<token>
 ```
 
-**ローカル実行**（動作確認用、実 CMS が無くてもバイナリは起動します）:
+**ローカル実行**:
 
 ```bash
 make build-cmsmigrate
 set -a; source .env; set +a
 ./bin/cmsmigrate
 ```
+
+このコマンドは実際に `CMSMIGRATE_CMS_BASE_URL` で指定された reearth-cms に HTTP で接続して Project / Model / Field を読み書きします。CMS が到達不能、Token が無効、または必須 env が未設定の場合は exit 1 になります。CMS への接続無しでバイナリの起動だけを試したいときは `go test ./internal/cmsmigrate/... -run Validate` などのユニットテストを実行してください。
 
 **prod 実行**:
 
