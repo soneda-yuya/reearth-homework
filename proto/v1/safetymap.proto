@@ -50,7 +50,10 @@ message ListSafetyIncidentsResponse {
 message GetSafetyIncidentRequest { string key_cd = 1; }
 message GetSafetyIncidentResponse { SafetyIncident item = 1; }
 
-message SearchSafetyIncidentsRequest { SafetyIncidentFilter filter = 1; }
+message SearchSafetyIncidentsRequest {
+  SafetyIncidentFilter filter = 1;
+  string query = 2; // keyword search term; empty = match all
+}
 message SearchSafetyIncidentsResponse {
   repeated SafetyIncident items = 1;
   string next_cursor = 2;

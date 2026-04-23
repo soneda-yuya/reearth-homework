@@ -1437,3 +1437,48 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **AI Response**: PR #48 (module rename) がマージされたことを確認。main を pull、chore branch 削除。`feature/u-bff-codegen-plan` を新 main に rebase し、audit.md の append 順序衝突を時系列で解決。
 
 ---
+
+## U-BFF Code Generation PR A (Phase 1-5) 実装完了
+
+**Timestamp**: 2026-04-24T02:40:00Z
+**User Input**: "マージしました" → PR #47 (Code Generation Plan) merged
+**AI Response**: Phase 1-5 を `feature/u-bff-code-gen-a` branch で実装:
+
+- **Phase 1**: `buf generate` で gen/go/v1/{common,pubsub,safetymap}.pb.go + overseasmapv1connect/safetymap.connect.go 生成（4 ファイル、~2900 行）
+- **Phase 2 Domain**:
+  - `internal/safetyincident/domain/read_ports.go`: SafetyIncidentReader + ListFilter + SearchFilter
+  - `internal/safetyincident/crimemap/domain/`: crimemap.go + color.go (5 段階 Reds palette) + color_test.go
+  - `internal/user/domain/`: profile.go + ports.go (ProfileRepository + AuthVerifier) + profile_test.go
+  - `internal/shared/authctx/`: context.go (WithUID / UIDFrom) + context_test.go
+- **Phase 3 Application**:
+  - `safetyincident/application/`: list / get / search / nearby / geojson UseCase + fake_test + read_usecases_test
+  - `safetyincident/crimemap/application/aggregator.go`: Choropleth + Heatmap (centroid fallback 除外)
+  - `user/application/`: get_profile (lazy create) / toggle_favorite / update_preference / register_fcm_token + fake + usecases_test
+- **Phase 4 Infrastructure**:
+  - `platform/cmsx/item_read.go`: ListItems + SearchItems (ListItemsQuery with cursor)
+  - `platform/firebasex/app.go`: Auth() accessor (sync.Once pattern)
+  - `safetyincident/infrastructure/cms/reader.go` + `fromfields.go`: CMSReader (List/Get/Search/ListNearby、Haversine 距離フィルタ)
+  - `user/infrastructure/firestore/profile_repo.go`: FirestoreProfileRepository (document-id 直接アクセス、ArrayUnion/ArrayRemove)
+  - `user/infrastructure/firebaseauth/verifier.go`: FirebaseAuthVerifier (VerifyIDToken のみ、Q C [A])
+- **Phase 5 Interfaces**:
+  - `interfaces/rpc/auth_interceptor.go`: NewAuthInterceptor (Bearer 検証 + ctx に uid 付与)
+  - `interfaces/rpc/error_interceptor.go`: NewErrorInterceptor (errs.Kind → connect.Code、prod message mask)
+  - `interfaces/rpc/conversions.go`: proto ⇄ domain 変換ヘルパ
+  - `interfaces/rpc/{safety_incident,crimemap,user_profile}_server.go`: 3 Service / 11 RPC handler
+  - `interfaces/rpc/*_test.go`: connecttest.Server で handler e2e (Interceptor + UseCase fake)
+
+**検証**:
+- `go build ./...` 緑
+- `go vet ./...` 緑
+- `go test ./... -race -count=1` 全緑
+- `golangci-lint run ./...` 緑
+
+**カバレッジ**:
+- domain: crimemap 100%, user 100%, authctx 100%
+- application: safetyincident 92.1%, crimemap 100%, user 86.7%
+- infrastructure: cms 80.1%, firebaseauth 100%, firestore 4.5% (live SDK 依存、U-NTF userrepo と同方針で Build and Test で担保)
+- interfaces/rpc: 82.9% (80% 基準クリア)
+
+**Context**: Phase 6-9 (Composition Root + Docs + CI) は PR B で対応。
+
+---

@@ -10,6 +10,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/auth"
 	"firebase.google.com/go/v4/messaging"
 
 	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
@@ -40,6 +41,10 @@ type App struct {
 	messagingOnce sync.Once
 	messaging     *messaging.Client
 	messagingErr  error
+
+	authOnce sync.Once
+	auth     *auth.Client
+	authErr  error
 }
 
 // NewApp initialises the Firebase Admin SDK using ADC. Production reads the
@@ -96,8 +101,25 @@ func (a *App) Messaging(ctx context.Context) (*messaging.Client, error) {
 	return a.messaging, nil
 }
 
-// Close releases the Firestore client (Messaging client does not need explicit
-// close; it rides on the same gRPC connection pool).
+// Auth returns the singleton Firebase Auth client (used by the BFF unit to
+// verify ID tokens). Same sync.Once contract as Firestore / Messaging.
+func (a *App) Auth(ctx context.Context) (*auth.Client, error) {
+	a.authOnce.Do(func() {
+		c, err := a.app.Auth(ctx)
+		if err != nil {
+			a.authErr = errs.Wrap("firebasex.auth", errs.KindExternal, err)
+			return
+		}
+		a.auth = c
+	})
+	if a.authErr != nil {
+		return nil, a.authErr
+	}
+	return a.auth, nil
+}
+
+// Close releases the Firestore client (Messaging / Auth clients do not need
+// explicit close; they ride on the same gRPC / HTTP pools).
 func (a *App) Close(_ context.Context) error {
 	if a.firestore == nil {
 		return nil
