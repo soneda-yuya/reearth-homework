@@ -189,6 +189,48 @@ gcloud run jobs execute ingestion \
 - per-item 失敗は **skip + 構造化ログ + Metric**、Run 自体は exit 0（U-ING design Q7 [A]）。失敗 item は CMS に未登録のまま残り、次の Run で自動再試行される（冪等性 + skip-and-continue の合わせ技）
 - ジオコーディング失敗時は **国 Centroid フォールバック**で必ず Item を保存。Flutter 側で `geocode_source = "country_centroid"` を見て「概算位置」UI を表示
 
+### notifier（Pub/Sub → FCM 配信 Service）
+
+`cmd/notifier` は Pub/Sub Push Subscription から `NewArrivalEvent` を受信し、Firestore の購読者に対して Firebase Cloud Messaging で通知を配信する Cloud Run Service です。 Cloud Scheduler 等の明示的な起動は不要で、Pub/Sub push がトリガーとなります。
+
+**必須 env**:
+
+```
+PLATFORM_SERVICE_NAME=notifier
+PLATFORM_ENV=dev
+PLATFORM_GCP_PROJECT_ID=overseas-safety-map
+NOTIFIER_PUBSUB_SUBSCRIPTION=notifier-safety-incident-new-arrival
+```
+
+任意 env（envconfig default で吸収）:
+
+```
+NOTIFIER_PORT=8080
+NOTIFIER_DEDUP_COLLECTION=notifier_dedup
+NOTIFIER_DEDUP_TTL_HOURS=24
+NOTIFIER_USERS_COLLECTION=users
+NOTIFIER_FCM_CONCURRENCY=5
+NOTIFIER_SHUTDOWN_GRACE_SECONDS=10
+```
+
+**ローカル実行**:
+
+```bash
+make build-notifier
+gcloud auth application-default login   # Firebase Admin SDK で ADC を使う
+set -a; source .env; set +a
+./bin/notifier
+```
+
+起動後に `/pubsub/push` に POST することで動作確認できます（Pub/Sub push envelope 形式の JSON を body に）。
+
+**prod 運用**:
+
+- Pub/Sub が自動で push 配信、運用者操作不要
+- 中断 / 失敗時は Pub/Sub の retry policy（10s〜600s exp backoff）で再試行、最終的に DLQ topic へ
+- 同じ `key_cd` の重複 publish は Firestore `notifier_dedup` collection（24h TTL）で自動排除
+- 永続的に無効な FCM token（`registration-token-not-registered` 等）は受信時に Firestore `users.fcm_tokens` から即時 `ArrayRemove` で除去
+
 ## Deployment
 
 GCP プロジェクト `overseas-safety-map`（asia-northeast1）に Cloud Run でデプロイします。詳細は [terraform/README.md](terraform/README.md) を参照。
@@ -206,7 +248,8 @@ internal/
   shared/            errs / clock / validate
   cmsmigrate/        U-CSS で追加（DDD: domain / application / infrastructure）
   safetyincident/    U-ING で追加（DDD: domain / application / infrastructure）
-  <bounded-context>/ 後続 Unit で追加（user / notification）
+  notification/      U-NTF で追加（DDD: domain / application / infrastructure）
+  <bounded-context>/ 後続 Unit で追加（user）
     domain/
     application/
     infrastructure/
@@ -232,6 +275,7 @@ aidlc-docs/          AI-DLC 設計ドキュメント
 - [U-PLT 設計・実装](aidlc-docs/construction/U-PLT/)
 - [U-CSS 設計・実装](aidlc-docs/construction/U-CSS/)
 - [U-ING 設計・実装](aidlc-docs/construction/U-ING/)
+- [U-NTF 設計・実装](aidlc-docs/construction/U-NTF/)
 
 ## ライセンス / データ出典
 
