@@ -41,10 +41,6 @@ resource "google_cloud_run_v2_job" "ingestion" {
           value = var.mofa_base_url
         }
         env {
-          name  = "INGESTION_PUBSUB_TOPIC"
-          value = var.new_arrival_topic_name
-        }
-        env {
           name  = "INGESTION_CMS_BASE_URL"
           value = var.cms_base_url
         }

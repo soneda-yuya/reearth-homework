@@ -6,25 +6,30 @@ package pubsubx
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	pubsub "cloud.google.com/go/pubsub/v2"
 
 	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
 )
 
-// Config identifies the Pub/Sub project. Endpoint is optional — set it to
-// the emulator's address (e.g. "localhost:8085") when running tests against
-// the official Pub/Sub emulator.
+// Config identifies the Pub/Sub project. Authentication is handled by
+// Application Default Credentials. Local emulator support (PUBSUB_EMULATOR_HOST
+// env) is provided by the SDK itself; this package does not need extra
+// configuration to use it.
 type Config struct {
 	ProjectID string
-	Endpoint  string
 }
 
 // Client wraps the cloud.google.com/go/pubsub Client. Callers receive a
-// Topic via Topic(); the Client.Close should be deferred at process exit.
+// Topic via Topic(); Close drains every Topic this Client created and then
+// closes the underlying gRPC connections.
 type Client struct {
 	cfg   Config
 	inner *pubsub.Client
+
+	mu     sync.Mutex
+	topics []*Topic
 }
 
 // NewClient instantiates the underlying SDK client. Authentication is
@@ -45,8 +50,18 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 // ProjectID returns the configured project id.
 func (c *Client) ProjectID() string { return c.cfg.ProjectID }
 
-// Close releases the underlying gRPC connections.
+// Close drains every Topic created from this Client (so buffered publishes
+// are flushed) and then releases the underlying gRPC connections. Safe to
+// call once at process exit; callers do not need to defer Topic.Stop()
+// individually unless they want eager flush before Close.
 func (c *Client) Close(_ context.Context) error {
+	c.mu.Lock()
+	topics := c.topics
+	c.topics = nil
+	c.mu.Unlock()
+	for _, t := range topics {
+		t.Stop()
+	}
 	if c.inner == nil {
 		return nil
 	}
@@ -58,7 +73,11 @@ func (c *Client) Close(_ context.Context) error {
 // ("projects/p/topics/my-topic"). The topic must already exist (created by
 // Terraform); this client does not auto-create topics.
 func (c *Client) Topic(name string) *Topic {
-	return &Topic{inner: c.inner.Publisher(name)}
+	t := &Topic{inner: c.inner.Publisher(name)}
+	c.mu.Lock()
+	c.topics = append(c.topics, t)
+	c.mu.Unlock()
+	return t
 }
 
 // Topic is the Publish-side handle adapter code calls. The interface
@@ -69,8 +88,8 @@ type Topic struct {
 
 // Publish enqueues data + attributes onto the topic. The returned id is the
 // server-assigned message id (or empty when the broker did not echo one).
-// Stop() is called by Client.Close at process exit, so callers do not need
-// to flush manually.
+// Buffered messages are flushed when Stop() is called; Client.Close stops
+// every Topic the client created, so callers do not need to flush manually.
 func (t *Topic) Publish(ctx context.Context, data []byte, attributes map[string]string) (string, error) {
 	res := t.inner.Publish(ctx, &pubsub.Message{Data: data, Attributes: attributes})
 	id, err := res.Get(ctx)

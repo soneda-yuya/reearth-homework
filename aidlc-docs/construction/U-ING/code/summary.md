@@ -47,7 +47,7 @@
 | `platform/cmsx/item.go` | Item CRUD 系 5 メソッド + URL クエリ escape (regression-tested) |
 | `platform/mapboxx/client.go` | 実 HTTP 実装 (Mapbox Geocoding) |
 | `platform/ratelimit/ratelimit.go` | `Wait(ctx)` メソッド |
-| `platform/pubsubx/client.go` | `cloud.google.com/go/pubsub` v1 wrapper、`Topic` 抽象 |
+| `platform/pubsubx/client.go` | `cloud.google.com/go/pubsub/v2` wrapper、`Topic` 抽象、Client.Close で全 Topic を Stop |
 
 ### Composition Root
 

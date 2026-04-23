@@ -153,9 +153,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// Close drains every Topic this client created and then closes the
+	// underlying gRPC connections — no need to defer topic.Stop separately.
 	defer func() { _ = psClient.Close(ctx) }()
 	topic := psClient.Topic(cfg.PubSubTopicID)
-	defer topic.Stop()
 	publisher := eventbus.New(topic)
 
 	usecase := application.NewIngestUseCase(
@@ -176,11 +177,8 @@ func run() error {
 	})
 	if err != nil {
 		// Fetch-level failure (MOFA unreachable, etc.). Per-item failures
-		// are inside result and do NOT bubble here — see Q7 [A].
-		logger.ErrorContext(ctx, "ingestion failed",
-			"app.ingestion.phase", "failed",
-			"err", err,
-		)
+		// are inside result and do NOT bubble here — see Q7 [A]. main()
+		// owns the terminal log line so we just propagate.
 		return err
 	}
 

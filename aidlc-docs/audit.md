@@ -995,9 +995,9 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 1. PR #33 merge (commit `5b20059`)。U-ING Code Gen PR A 完了 (Phase 1-7 + Copilot 2 round 対応)。
 2. Feature branch `feature/u-ing-code-pr-b` を切って Phase 8-11 を実装:
    - **Phase 8 Composition Root**:
-     - `internal/platform/pubsubx/client.go`: cloud.google.com/go/pubsub v1.50.2 で実装、Topic 抽象を eventbus.Topic に適合
+     - `internal/platform/pubsubx/client.go`: cloud.google.com/go/pubsub/v2 で実装、Topic 抽象を eventbus.Topic に適合、Client.Close で生成済み Topic を全て Stop (lint SA1019 対応で v1 から v2 へ移行)
      - `cmd/ingestion/main.go`: ingestionConfig 拡張 (15 env)、observability + 5 adapter + 2 ratelimit + DI 配線、resolveModelID() で起動時 1 回 CMS から model id 取得、main → run() pattern (defer 保証)
-     - go.mod: cloud.google.com/go/pubsub 追加 (transitive deps 多数)
+     - go.mod: cloud.google.com/go/pubsub/v2 追加 (transitive deps 多数)
    - **Phase 9 Terraform**:
      - `terraform/modules/ingestion/main.tf`: max_retries=0 追加、env INGESTION_MODE=incremental + INGESTION_PUBSUB_TOPIC_ID=var.new_arrival_topic_id 追加
      - terraform fmt + init + validate 全緑
