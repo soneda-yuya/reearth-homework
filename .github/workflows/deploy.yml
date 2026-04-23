@@ -50,7 +50,7 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ci-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
 
-      - uses: google-github-actions/setup-gcloud@v2
+      - uses: google-github-actions/setup-gcloud@v3
 
       - name: Configure Docker auth for Artifact Registry
         run: gcloud auth configure-docker --quiet ${{ env.REGISTRY }}
