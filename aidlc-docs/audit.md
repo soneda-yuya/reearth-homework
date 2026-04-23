@@ -986,3 +986,27 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成して計画レビュー依頼。回答後に Phase 1-11 実装へ進む。
 
 ---
+
+## U-ING Code Gen PR B (Phase 8-11)
+
+**Timestamp**: 2026-04-23T05:00:00Z
+**User Input**: "マージしました" (PR #33 merge) → PR B (Composition Root + Terraform + Docs + CI verification) 着手
+**AI Actions**:
+1. PR #33 merge (commit `5b20059`)。U-ING Code Gen PR A 完了 (Phase 1-7 + Copilot 2 round 対応)。
+2. Feature branch `feature/u-ing-code-pr-b` を切って Phase 8-11 を実装:
+   - **Phase 8 Composition Root**:
+     - `internal/platform/pubsubx/client.go`: cloud.google.com/go/pubsub v1.50.2 で実装、Topic 抽象を eventbus.Topic に適合
+     - `cmd/ingestion/main.go`: ingestionConfig 拡張 (15 env)、observability + 5 adapter + 2 ratelimit + DI 配線、resolveModelID() で起動時 1 回 CMS から model id 取得、main → run() pattern (defer 保証)
+     - go.mod: cloud.google.com/go/pubsub 追加 (transitive deps 多数)
+   - **Phase 9 Terraform**:
+     - `terraform/modules/ingestion/main.tf`: max_retries=0 追加、env INGESTION_MODE=incremental + INGESTION_PUBSUB_TOPIC_ID=var.new_arrival_topic_id 追加
+     - terraform fmt + init + validate 全緑
+   - **Phase 10 Docs**:
+     - `aidlc-docs/construction/U-ING/code/summary.md`: 生成ファイル一覧 / NFR-ING-* カバレッジ / テストカバレッジ実績 (90.9%) / 設計のキモ / U-NTF への申し送り / 将来拡張ポイント
+     - README に ingestion セクション追加 (必須/任意 env、ローカル実行、prod initial 実行手順)、Layout / AI-DLC index に U-ING 追加
+   - **Phase 11 CI verification**: 後述
+3. aidlc-state.md: PR A merged を記録、PR B は「実装完了、レビュー待ち」に更新。
+
+**Context**: PR を作成してレビュー依頼。承認後 U-ING Build and Test へ進む。
+
+---

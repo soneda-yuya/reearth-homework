@@ -6,9 +6,19 @@ resource "google_cloud_run_v2_job" "ingestion" {
     template {
       service_account = google_service_account.runtime.email
       timeout         = "300s"
+      max_retries     = 0
 
       containers {
         image = "${var.artifact_registry_url}/ingestion:${var.image_tag}"
+
+        env {
+          name  = "INGESTION_MODE"
+          value = "incremental"
+        }
+        env {
+          name  = "INGESTION_PUBSUB_TOPIC_ID"
+          value = var.new_arrival_topic_id
+        }
 
         env {
           name  = "PLATFORM_SERVICE_NAME"
