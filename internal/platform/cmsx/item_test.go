@@ -37,6 +37,26 @@ func TestFindItemByFieldValue_Hit(t *testing.T) {
 	}
 }
 
+// TestFindItemByFieldValue_QueryEscapesSpecialChars guards against a past
+// bug where the URL was built via PathEscape, so '+' / '&' / '=' in field
+// values would be mis-decoded by the server. We assert the server sees the
+// exact value the client passed in.
+func TestFindItemByFieldValue_QueryEscapesSpecialChars(t *testing.T) {
+	t.Parallel()
+	const trickyValue = "MOFA+2026 04/23&id=001"
+	c, srv := newClient(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("value"); got != trickyValue {
+			t.Errorf("value query = %q, want %q", got, trickyValue)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+	})
+	defer srv.Close()
+
+	if _, err := c.FindItemByFieldValue(context.Background(), "m-1", "key_cd", trickyValue); err != nil {
+		t.Fatalf("FindItemByFieldValue: %v", err)
+	}
+}
+
 func TestFindItemByFieldValue_Miss_EmptyArray(t *testing.T) {
 	t.Parallel()
 	c, srv := newClient(func(w http.ResponseWriter, _ *http.Request) {

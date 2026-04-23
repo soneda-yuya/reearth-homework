@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -34,7 +35,13 @@ func (c *Client) FindItemByFieldValue(ctx context.Context, modelID, fieldKey, va
 		))
 	defer span.End()
 
-	u := c.url("/api/models/%s/items?key=%s&value=%s", modelID, fieldKey, value)
+	// Path components must be PathEscape-d, but query parameters need
+	// QueryEscape semantics (notably so '+' encodes correctly). Build the
+	// two halves separately and concatenate.
+	q := url.Values{}
+	q.Set("key", fieldKey)
+	q.Set("value", value)
+	u := c.url("/api/models/%s/items", modelID) + "?" + q.Encode()
 
 	var out struct {
 		Items []json.RawMessage `json:"items"`
