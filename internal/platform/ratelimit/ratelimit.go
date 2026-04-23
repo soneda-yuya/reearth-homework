@@ -3,6 +3,7 @@
 package ratelimit
 
 import (
+	"context"
 	"fmt"
 
 	"golang.org/x/time/rate"
@@ -41,6 +42,17 @@ func (l *Limiter) Allow() error {
 	}
 	return errs.Wrap("ratelimit", errs.KindExternal,
 		fmt.Errorf("%s: rate limit exceeded", l.name))
+}
+
+// Wait blocks until one token is available or ctx is cancelled. Use this in
+// adapters that need to throttle outgoing calls without dropping the request
+// (the bucket fills back up over time).
+func (l *Limiter) Wait(ctx context.Context) error {
+	if err := l.inner.Wait(ctx); err != nil {
+		return errs.Wrap("ratelimit", errs.KindExternal,
+			fmt.Errorf("%s: %w", l.name, err))
+	}
+	return nil
 }
 
 // Name returns the limiter's identifier (used in logs).
