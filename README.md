@@ -144,7 +144,7 @@ INGESTION_CMS_WORKSPACE_ID=wkp_XXXXXXXX
 INGESTION_CMS_INTEGRATION_TOKEN=<token>
 INGESTION_CLAUDE_API_KEY=<key>
 INGESTION_MAPBOX_API_KEY=<key>
-INGESTION_PUBSUB_TOPIC_ID=safety-incident.new-arrival
+INGESTION_PUBSUB_TOPIC_ID=projects/overseas-safety-map/topics/safety-incident.new-arrival  # 短 topic 名 (safety-incident.new-arrival) も可
 ```
 
 任意 env（envconfig default で吸収。本番では Terraform でも明示しない）:

@@ -184,7 +184,7 @@ func run() error {
 
 	logger.InfoContext(ctx, "ingestion finished",
 		"app.ingestion.phase", "done",
-		"mode", cfg.Mode,
+		"app.ingestion.mode", cfg.Mode,
 		"fetched", result.Fetched,
 		"skipped", result.Skipped,
 		"processed", result.Processed,
