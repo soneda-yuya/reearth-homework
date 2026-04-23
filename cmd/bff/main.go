@@ -182,11 +182,20 @@ func run() error {
 		{Path: upPath, Handler: upHandler},
 	}
 
+	// /readyz surfaces the dependencies we rely on, so Cloud Run can mark
+	// a revision not-ready when a backing service is unreachable. Both
+	// probers are stubs today; the wiring is what matters — a real probe
+	// can land without touching composition-root code.
+	probers := []connectserver.Prober{
+		cmsClient.Prober(),
+		fbApp.Prober(),
+	}
+
 	// --- HTTP server ---------------------------------------------------
 	srv := connectserver.New(connectserver.Config{
 		Port:            cfg.Port,
 		ShutdownTimeout: time.Duration(cfg.ShutdownGraceSeconds) * time.Second,
-	}, handlers, nil)
+	}, handlers, probers)
 
 	logger.InfoContext(ctx, "bff ready",
 		"app.bff.phase", "ready",
