@@ -5,7 +5,7 @@
 - **プロジェクトタイプ**: グリーンフィールド
 - **開始日**: 2026-04-20T17:55:00Z（アイデア変更のリセット）
 - **現在のフェーズ**: CONSTRUCTION
-- **現在のステージ**: U-BFF（Connect Server Unit、Sprint 3）／ Infrastructure Design 本編（PR レビュー待ち）
+- **現在のステージ**: U-BFF（Connect Server Unit、Sprint 3）／ Code Generation PR A (Phase 1-5) 実装完了、PR レビュー待ち
 
 ## ワークフロー圧縮方針（2026-04-22 採用）
 **U-CSS 以降の Unit は Functional Design / NFR Requirements / NFR Design を「Minimal 合本版」1 ドキュメントにまとめる**。U-PLT で共通規約を確定したため、各 Unit 固有の内容のみを簡潔に記述する。Infrastructure Design / Code Generation / Build & Test は従来どおり独立して実施する。
@@ -89,8 +89,10 @@
 - [x] Minimal 合本版 計画（PR #43 merged 2026-04-23、Q1-Q9 全 A）
 - [x] Minimal 合本版 本編（Functional + NFR Req + NFR Design）— PR #44 merged 2026-04-23（Copilot 対応は PR #45 内）
 - [x] インフラ設計 計画（PR #45 merged 2026-04-23、Q1-Q6 全 A）
-- [ ] インフラ設計 本編（Infrastructure Design：deployment-architecture + terraform-plan）— 生成済み、PR レビュー待ち
-- [ ] コード生成（Code Generation）
+- [x] インフラ設計 本編（Infrastructure Design：deployment-architecture + terraform-plan）— PR #46 merged 2026-04-23
+- [x] コード生成 計画（PR #47 merged 2026-04-23、Phase 1-9 + Q A-F 全 A）
+- [ ] コード生成 PR A（Phase 1-5: proto + domain + application + infrastructure + interfaces）— 実装完了、PR レビュー待ち
+- [ ] コード生成 PR B（Phase 6-9: Composition Root + Terraform + Docs + CI）
 - [ ] ビルドとテスト（Build and Test）
 
 #### U-CSS / U-ING / U-BFF / U-NTF / U-APP
