@@ -12,6 +12,13 @@ import (
 	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
 )
 
+// maxPushBodyBytes caps how much the handler will read from one Pub/Sub
+// push request. Google caps messages at 10 MiB including attributes; we
+// keep a 1 MiB ceiling which is plenty for NewArrivalEvent payloads (a few
+// KB in practice) and protects us against misconfigured invokers or a stray
+// tester POSTing a giant body.
+const maxPushBodyBytes = 1 << 20
+
 // NotifierHandler bridges Pub/Sub Push delivery onto
 // [application.DeliverNotificationUseCase]. HTTP status codes follow the
 // Q6 [A] contract: 200 for ACK, 400 for malformed payloads (Pub/Sub routes
@@ -40,9 +47,14 @@ func (h *NotifierHandler) Push(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 
-	body, err := io.ReadAll(r.Body)
+	defer func() { _ = r.Body.Close() }()
+	limited := http.MaxBytesReader(w, r.Body, maxPushBodyBytes)
+	body, err := io.ReadAll(limited)
 	if err != nil {
-		// Transport-level read failure — let Pub/Sub retry.
+		// Transport-level read failure — let Pub/Sub retry. Oversize
+		// bodies also land here (MaxBytesReader returns an error once the
+		// limit is hit); we classify as 500 too because Pub/Sub will not
+		// shrink the payload on its own.
 		h.logger.ErrorContext(ctx, "read push body failed",
 			"app.notifier.phase", "receive",
 			"err", err,
@@ -50,7 +62,6 @@ func (h *NotifierHandler) Push(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "read body", http.StatusInternalServerError)
 		return
 	}
-	defer func() { _ = r.Body.Close() }()
 
 	event, err := h.decoder.Decode(body)
 	if err != nil {

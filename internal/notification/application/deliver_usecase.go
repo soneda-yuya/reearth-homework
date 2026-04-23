@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -111,6 +112,20 @@ func (u *DeliverNotificationUseCase) Execute(ctx context.Context, in DeliverInpu
 		))
 	defer span.End()
 
+	// Record per-request duration on every exit path (including dedup /
+	// no-subscribers early returns and transient-error propagation). The
+	// outcome attribute lets dashboards separate happy-path p95 from the
+	// dedup/no-sub shortcuts.
+	start := time.Now()
+	outcome := OutcomeDelivered // default; overridden below on early exits
+	defer func() {
+		if u.durationHistogram == nil {
+			return
+		}
+		u.durationHistogram.Record(ctx, time.Since(start).Milliseconds(),
+			metric.WithAttributes(attribute.String("outcome", outcome.String())))
+	}()
+
 	if u.receivedCounter != nil {
 		u.receivedCounter.Add(ctx, 1, metric.WithAttributes(
 			attribute.String("country_cd", in.Event.CountryCd),
@@ -131,6 +146,7 @@ func (u *DeliverNotificationUseCase) Execute(ctx context.Context, in DeliverInpu
 		if u.dedupedCounter != nil {
 			u.dedupedCounter.Add(ctx, 1)
 		}
+		outcome = OutcomeDeduped
 		return DeliverResult{Outcome: OutcomeDeduped}, nil
 	}
 
@@ -144,6 +160,7 @@ func (u *DeliverNotificationUseCase) Execute(ctx context.Context, in DeliverInpu
 			"app.notifier.phase", "resolve",
 			"key_cd", in.Event.KeyCd,
 		)
+		outcome = OutcomeNoSubscribers
 		return DeliverResult{Outcome: OutcomeNoSubscribers}, nil
 	}
 	if u.recipientsHistogram != nil {

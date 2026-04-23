@@ -49,13 +49,21 @@ func New(client *firestore.Client, cfg Config) *FirestoreDedup {
 // → return (false, nil). Two concurrent requests on the same key_cd produce
 // exactly one (false, nil) and one (true, nil) because Firestore serialises
 // transaction writes on the same document.
+//
+// Firestore may retry the transaction function on conflict, so the closure
+// resets `seen` on every attempt into a local variable; the outer return
+// value is only assigned after RunTransaction returns success, which
+// prevents a retried attempt from leaking a stale `true` observed in an
+// earlier iteration.
 func (d *FirestoreDedup) CheckAndMark(ctx context.Context, keyCd string) (bool, error) {
 	ref := d.client.Collection(d.collection).Doc(keyCd)
-	alreadySeen := false
+	var seenOnLastAttempt bool
 	err := d.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		// Reset on every attempt so the result reflects this iteration only.
+		seenOnLastAttempt = false
 		_, err := tx.Get(ref)
 		if err == nil {
-			alreadySeen = true
+			seenOnLastAttempt = true
 			return nil
 		}
 		if status.Code(err) != codes.NotFound {
@@ -69,5 +77,5 @@ func (d *FirestoreDedup) CheckAndMark(ctx context.Context, keyCd string) (bool, 
 	if err != nil {
 		return false, errs.Wrap("dedup.firestore", errs.KindExternal, err)
 	}
-	return alreadySeen, nil
+	return seenOnLastAttempt, nil
 }

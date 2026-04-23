@@ -6,6 +6,7 @@ package firebasex
 
 import (
 	"context"
+	"sync"
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go/v4"
@@ -25,12 +26,20 @@ type Config struct {
 
 // App wraps a firebase.App plus the singleton clients derived from it.
 // Callers grab a Firestore / Messaging client via the accessor methods and
-// close the App at process exit via Close.
+// close the App at process exit via Close. The lazy client fields are
+// guarded by sync.Once so Firestore() / Messaging() are safe to call
+// concurrently.
 type App struct {
-	cfg       Config
-	app       *firebase.App
-	firestore *firestore.Client
-	messaging *messaging.Client
+	cfg Config
+	app *firebase.App
+
+	firestoreOnce sync.Once
+	firestore     *firestore.Client
+	firestoreErr  error
+
+	messagingOnce sync.Once
+	messaging     *messaging.Client
+	messagingErr  error
 }
 
 // NewApp initialises the Firebase Admin SDK using ADC. Production reads the
@@ -53,30 +62,38 @@ func (a *App) ProjectID() string { return a.cfg.ProjectID }
 
 // Firestore returns the singleton Firestore client. Construction is lazy so
 // callers that only need Messaging (or vice versa) don't pay the startup
-// cost of the other.
+// cost of the other. sync.Once guarantees concurrent callers see the same
+// client (or the same initial error).
 func (a *App) Firestore(ctx context.Context) (*firestore.Client, error) {
-	if a.firestore != nil {
-		return a.firestore, nil
+	a.firestoreOnce.Do(func() {
+		c, err := a.app.Firestore(ctx)
+		if err != nil {
+			a.firestoreErr = errs.Wrap("firebasex.firestore", errs.KindExternal, err)
+			return
+		}
+		a.firestore = c
+	})
+	if a.firestoreErr != nil {
+		return nil, a.firestoreErr
 	}
-	c, err := a.app.Firestore(ctx)
-	if err != nil {
-		return nil, errs.Wrap("firebasex.firestore", errs.KindExternal, err)
-	}
-	a.firestore = c
-	return c, nil
+	return a.firestore, nil
 }
 
-// Messaging returns the singleton FCM client.
+// Messaging returns the singleton FCM client. Same sync.Once contract as
+// Firestore.
 func (a *App) Messaging(ctx context.Context) (*messaging.Client, error) {
-	if a.messaging != nil {
-		return a.messaging, nil
+	a.messagingOnce.Do(func() {
+		c, err := a.app.Messaging(ctx)
+		if err != nil {
+			a.messagingErr = errs.Wrap("firebasex.messaging", errs.KindExternal, err)
+			return
+		}
+		a.messaging = c
+	})
+	if a.messagingErr != nil {
+		return nil, a.messagingErr
 	}
-	c, err := a.app.Messaging(ctx)
-	if err != nil {
-		return nil, errs.Wrap("firebasex.messaging", errs.KindExternal, err)
-	}
-	a.messaging = c
-	return c, nil
+	return a.messaging, nil
 }
 
 // Close releases the Firestore client (Messaging client does not need explicit
