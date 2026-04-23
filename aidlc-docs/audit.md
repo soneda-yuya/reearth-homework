@@ -1254,3 +1254,87 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: PR 作成してレビュー依頼。承認後 U-BFF Infrastructure Design へ進む。
 
 ---
+
+## U-BFF Design PR 承認・マージ
+
+**Timestamp**: 2026-04-23T06:00:00Z
+**User Input**: "マージしました"
+**AI Response**: PR #44 (U-BFF Design、Minimal 合本版) がマージされたことを確認。main を pull、feature branch 削除。aidlc-state.md を更新し「Minimal 合本版 本編: PR #44 merged 2026-04-23」を記録。次は U-BFF Infrastructure Design plan に着手。
+**Context**: U-BFF Design 本編完了。Infrastructure Design 段階へ遷移。
+
+---
+
+## U-BFF 全体進捗確認
+
+**Timestamp**: 2026-04-23T06:02:00Z
+**User Input**: "全体の進捗を教えてください"
+**AI Response**: INCEPTION 100%、CONSTRUCTION 約 70-72%。U-PLT / U-CSS / U-ING / U-NTF 完了、U-BFF 約 25%（Plan + Design 本編まで）、U-APP 未着手、Global B&T 未着手、Operations プレースホルダー。
+
+**Context**: 全体進捗サマリーを提示。
+
+---
+
+## U-BFF Infrastructure Design 計画着手
+
+**Timestamp**: 2026-04-23T06:10:00Z
+**User Input**: （進捗確認後、Infrastructure Design plan を生成するよう進行）
+**AI Response**: `construction/plans/U-BFF-infrastructure-design-plan.md` を作成。Q1-Q6 の論点:
+- Q1: Flutter クライアント接続方式（CORS 要否）
+- Q2: Cloud Run scaling / concurrency 値（現状維持 vs min=1 vs concurrency 調整）
+- Q3: Firestore リソース所有権（shared module に変更不要か）
+- Q4: Firebase Admin SDK 利用に伴う追加 IAM
+- Q5: 追加 env の Terraform 反映粒度（U-NTF Q4 と同方針）
+- Q6: Terraform 変更ゼロでも Infrastructure Design ドキュメントを生成するか
+
+**Context**: U-PLT で BFF module が既に充足しているため、U-BFF Infra Design は薄く済む見込み。Q1-Q6 を順に確認。
+
+---
+
+## U-BFF Infrastructure Design Plan Q1-Q6 回答
+
+**Timestamp**: 2026-04-24T00:05:00Z
+**User Input**: "A"（Q1-Q6 全てに対して）
+**AI Response**: Q1-Q6 全て A で確定:
+- Q1 [A]: Flutter mobile 前提、CORS 設定なし
+- Q2 [A]: Cloud Run scaling 現状維持（min=0 / max=3 / cpu=1 / memory=512Mi、concurrency デフォルト 80）
+- Q3 [A]: Firestore shared/firestore.tf 変更なし（document-id 直接アクセスのみ）
+- Q4 [A]: IAM 変更なし（既存 datastore.user + secretmanager.secretAccessor）
+- Q5 [A]: env = U-ING Q5 / U-NTF Q4 と同方針、Terraform 追加 env ゼロ
+- Q6 [A]: 変更ゼロでも Infrastructure Design ドキュメント 2 種生成
+
+**結果**: Terraform コード変更ゼロ。deployment-architecture.md + terraform-plan.md で「既存インフラで充足する根拠」を文書化する方針で確定。
+
+**Context**: Plan ファイル更新、PR 作成へ。
+
+---
+
+## U-BFF Design PR #44 Copilot レビュー対応（後追い、PR #45 内で修正）
+
+**Timestamp**: 2026-04-24T00:25:00Z
+**User Input**: "このPRの中で以下のPRでついたコメントも直してくれますか https://github.com/soneda-yuya/reearth-homework/pull/44"
+**AI Response**: PR #44 (U-BFF Design) に Copilot コメント 5 件あり。PR #45 (Infrastructure Design Plan) 内で design doc を修正:
+
+1. **L153 (Pagination cursor)**: `SafetyIncidentReader.List` / `Search` の戻り値を `(items []SafetyIncident, nextCursor string, err error)` に変更。§1.1 の "filter + cursor" 前提のページングが成立するようにした。`Aggregator.Choropleth` / `Heatmap` の呼び出しも `items, _, err := ...` に更新（集計系は単発読み切り）。`§1.4.1` に UseCase が cursor を RPC レイヤに伝播する旨を追記。
+2. **L341 (AuthInterceptor missing token)**: `errs.Wrap(..., err)` の `err` は未設定（named return のゼロ値= nil）で Wrap 実装次第では nil が返る可能性があったため、`errors.New("missing bearer token")` を作って Wrap するよう修正。`context.Context` / `connect.AnyRequest` / `connect.AnyResponse` の完全型も追加。
+3. **L454/L459 (Composition root API 不一致)**: `mux.Handle(Handler())` は `(path, http.Handler)` を返す Connect 生成 Handler をラップできないため、`path, h := ...Handler(...)` で destructure する形に修正。`connectserver.New(cfg, mux, logger)` / `Serve(ctx)` は実在の API `connectserver.New(cfg, []HandlerRegistration, []Prober)` / `Start(ctx)` に一致させた。interceptors は handler 構築時に適用する必要がある旨をコメントで明記。
+4. **L547 (purchase query 誤記)**: "Read (purchase query)" → "Read (per-country broadcast query)" に訂正（U-NTF の query パターンに合わせた意味）。
+
+**Context**: PR #44 は merged 済みだが、指摘されたドキュメントレベルの誤りを PR #45 内で修正。コード生成段階で正しい signature / API を参照できるようにする。
+
+---
+
+## U-BFF Design PR #45 Copilot レビュー対応 (1 件)
+
+**Timestamp**: 2026-04-24T00:40:00Z
+**User Input**: "コメントを確認してください"
+**AI Response**: PR #45 に Copilot コメント 1 件あり（L145）:
+
+- SafetyIncidentReader.List/Search を (items, nextCursor, err) に更新した一方、§1.5.1 の CMSReader.List 実装例が `([]domain.SafetyIncident, error)` のまま残っており、同一ドキュメント内の整合が崩れていた。
+
+修正:
+1. §1.3.1 ListNearby にコメント追記: top-N proximity query であるため cursor を持たない設計意図を明示。将来 paging が必要になれば cursor 戻り値を追加する旨も記載。
+2. §1.5.1 CMSReader.List / Search 実装例を `(items, nextCursor string, err error)` シグネチャに更新。CMS 側の next page token を opaque にそのまま返す方針をコメント化。ListNearby 実装例も明示的に追加し、cursor なしの理由をコメント化。
+
+**Context**: Interface と実装例の整合性が担保された。コード生成段階で迷わず参照できる。
+
+---
