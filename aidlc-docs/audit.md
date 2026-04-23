@@ -1098,3 +1098,38 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成して計画レビュー依頼。回答後に Infrastructure Design 本編を生成する。
 
 ---
+
+## U-NTF Infra Plan Answered + Design Generated
+
+**Timestamp**: 2026-04-23T10:30:00Z
+**User Input**: 4 質問を 1 つずつチャットで確認 → 全て A で回答
+**AI Actions**:
+1. plan ファイルに Q1-Q4 全て `[A]: A` を記入、最終確認欄を Q&A 要旨で埋めた。
+2. PR #38 auto-merge (commit `44b2f05`)。
+3. Feature branch `feature/u-ntf-infra-design` を切って以下を生成:
+   - `construction/U-NTF/infrastructure-design/deployment-architecture.md`
+     - Component Overview (U-ING → Pub/Sub → Cloud Run → Firestore / FCM の依存図)
+     - Cloud Run Service 仕様 (現状維持、U-PLT 雛形)
+     - Pub/Sub Push Subscription 仕様 (現状維持)
+     - IAM 一覧 (現状維持、5 Runtime SA + 2 Pub/Sub agent binding)
+     - Firestore 仕様 (新規 2 リソース: notifier_dedup TTL + users 複合 index)
+     - 運用ランブック (初回デプロイ順序、DLQ 監視、FCM UI カスタマイズ)
+     - トレーサビリティ
+   - `construction/U-NTF/infrastructure-design/terraform-plan.md`
+     - 変更サマリ (1 ファイル、2 リソース追加のみ)
+     - 詳細 diff (疑似)
+     - terraform apply 想定出力 (Plan: 2 to add, 0 to change, 0 to destroy)
+     - envconfig default で吸収する 5 env の方針
+     - Code Generation へ渡す TODO
+     - 非 Terraform セットアップ手順 (Firebase プロジェクト設定、Firestore 初期データ、index READY 確認)
+4. aidlc-state.md を「Infra Design 本編生成済み、PR レビュー待ち」に更新。
+
+**Key Infra Decisions**:
+- Firestore TTL policy (notifier_dedup.expireAt, 24h) と users 複合インデックスを shared module に集約
+- Cloud Run scaling は U-PLT 雛形のまま (min=0/max=2)、MVP トラフィックに十分
+- Terraform 追加 env ゼロ、tuning は envconfig default に完全委譲 (U-CSS/U-ING と一貫)
+- Pub/Sub Push + DLQ + Runtime SA + IAM は U-PLT で既に完成済み
+
+**Context**: PR を作成してレビュー依頼。承認後 U-NTF Code Generation へ進む。
+
+---
