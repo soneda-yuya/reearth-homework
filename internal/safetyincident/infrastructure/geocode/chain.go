@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/soneda-yuya/reearth-homework/internal/safetyincident/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/safetyincident/domain"
 )
 
 // CentroidLookup is the subset of CentroidGeocoder the chain depends on.

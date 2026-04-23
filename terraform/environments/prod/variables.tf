@@ -16,7 +16,7 @@ variable "region" {
 
 variable "github_repository" {
   type    = string
-  default = "soneda-yuya/reearth-homework"
+  default = "soneda-yuya/overseas-safety-map"
 }
 
 # NOTE: the tfstate bucket name is deliberately NOT a variable. Terraform

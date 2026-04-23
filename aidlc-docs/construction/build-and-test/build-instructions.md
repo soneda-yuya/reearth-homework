@@ -82,7 +82,7 @@ PR `terraform/` 配下変更時は `terraform-validate.yml` が `fmt -check -rec
 ローカル Go が 1.25 以下の場合。`brew upgrade go` またはゴルフポイントインストール。
 
 ### `buf generate` が失敗
-`buf.yaml` で `lint.except: [PACKAGE_DIRECTORY_MATCH]` を指定しているか確認。`proto/v1/*.proto` の `go_package` オプションが `github.com/soneda-yuya/reearth-homework/gen/go/v1;overseasmapv1` と整合しているか。
+`buf.yaml` で `lint.except: [PACKAGE_DIRECTORY_MATCH]` を指定しているか確認。`proto/v1/*.proto` の `go_package` オプションが `github.com/soneda-yuya/overseas-safety-map/gen/go/v1;overseasmapv1` と整合しているか。
 
 ### `terraform validate` が変数未定義で失敗
 `terraform init -backend=false` で初回のみ `-backend=false` を付ける（tfstate bucket 未作成の場合）。変数は `-var` もしくは `terraform.tfvars` で渡す。

@@ -11,8 +11,8 @@ import (
 	"cloud.google.com/go/firestore"
 	"google.golang.org/api/iterator"
 
-	"github.com/soneda-yuya/reearth-homework/internal/notification/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // FirestoreUserRepository implements domain.UserRepository.

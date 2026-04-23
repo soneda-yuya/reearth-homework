@@ -3,8 +3,8 @@ package geocode_test
 import (
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/safetyincident/infrastructure/geocode"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/safetyincident/infrastructure/geocode"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 func TestCentroidGeocoder_LoadAndLookup(t *testing.T) {

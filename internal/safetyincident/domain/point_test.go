@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/safetyincident/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/safetyincident/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 	"pgregory.net/rapid"
 )
 

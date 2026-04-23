@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/application"
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/application"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // fakeApplier is an in-memory SchemaApplier for use case tests. It records

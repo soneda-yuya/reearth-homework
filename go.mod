@@ -1,4 +1,4 @@
-module github.com/soneda-yuya/reearth-homework
+module github.com/soneda-yuya/overseas-safety-map
 
 go 1.26
 

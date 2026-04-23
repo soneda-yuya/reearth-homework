@@ -99,7 +99,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.repository" = "assertion.repository"
     "attribute.ref"        = "assertion.ref"
   }
-  attribute_condition = "assertion.repository == 'soneda-yuya/reearth-homework'"
+  attribute_condition = "assertion.repository == 'soneda-yuya/overseas-safety-map'"
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
@@ -109,7 +109,7 @@ resource "google_service_account_iam_binding" "ci_deployer_wif" {
   service_account_id = google_service_account.ci_deployer.name
   role               = "roles/iam.workloadIdentityUser"
   members = [
-    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/soneda-yuya/reearth-homework",
+    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/soneda-yuya/overseas-safety-map",
   ]
 }
 ```

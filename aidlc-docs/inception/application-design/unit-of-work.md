@@ -17,11 +17,11 @@
 
 | ID | 名称 | タイプ | リポジトリ | Deployable | 順序 |
 |---|---|---|---|---|---|
-| U-PLT | Platform & Proto 基盤 | Supporting（Shared Infra） | reearth-homework | なし（ライブラリ / 契約） | 0 |
-| U-CSS | CMS セットアップ | Supporting（Context） | reearth-homework | Cloud Run Job 単発 | 1 |
-| U-ING | 取り込みパイプライン | Core（Context） | reearth-homework | Cloud Run Job（スケジュール） | 2 |
-| U-BFF | Connect サーバ（BFF） | Core（Context 横断） | reearth-homework | Cloud Run Service | 3 |
-| U-NTF | 通知配信 | Supporting（Context） | reearth-homework | Cloud Run Service（Pub/Sub push） | 4 |
+| U-PLT | Platform & Proto 基盤 | Supporting（Shared Infra） | overseas-safety-map | なし（ライブラリ / 契約） | 0 |
+| U-CSS | CMS セットアップ | Supporting（Context） | overseas-safety-map | Cloud Run Job 単発 | 1 |
+| U-ING | 取り込みパイプライン | Core（Context） | overseas-safety-map | Cloud Run Job（スケジュール） | 2 |
+| U-BFF | Connect サーバ（BFF） | Core（Context 横断） | overseas-safety-map | Cloud Run Service | 3 |
+| U-NTF | 通知配信 | Supporting（Context） | overseas-safety-map | Cloud Run Service（Pub/Sub push） | 4 |
 | U-APP | Flutter アプリ | Core（フロントエンド） | overseas-safety-map-app（別リポ） | TestFlight / Play Console Internal | 5 |
 
 ---
@@ -213,7 +213,7 @@
 
 Application Design [application-design.md §6](./application-design.md) の DDD 構造が確定しているため、基本的にはそれに従う。以下は Unit 化に伴う追加の運用ルール:
 
-- **リポジトリ 2 つ**: `reearth-homework`（Go サーバーモノレポ）、`overseas-safety-map-app`（Flutter）
+- **リポジトリ 2 つ**: `overseas-safety-map`（Go サーバーモノレポ）、`overseas-safety-map-app`（Flutter）
 - **ディレクトリは Unit 単位で独立ビルド可能** にする:
   - U-PLT / U-CSS / U-ING / U-BFF / U-NTF は全て `cmd/{deployable}` と `internal/*` の組み合わせで独立ビルドでき、CI で個別 Unit をテスト可能にする。
   - `deploy/{unit}/` にそれぞれの Dockerfile / Cloud Run 定義を置く。

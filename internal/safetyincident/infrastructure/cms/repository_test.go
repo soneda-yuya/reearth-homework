@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/cmsx"
-	"github.com/soneda-yuya/reearth-homework/internal/safetyincident/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/safetyincident/infrastructure/cms"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/cmsx"
+	"github.com/soneda-yuya/overseas-safety-map/internal/safetyincident/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/safetyincident/infrastructure/cms"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 type stubItemClient struct {

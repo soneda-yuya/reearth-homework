@@ -16,7 +16,7 @@ graph TB
     end
 
     subgraph GitHub["GitHub"]
-        Repo["reearth-homework<br/>(Go monorepo)"]
+        Repo["overseas-safety-map<br/>(Go monorepo)"]
         FlutterRepo["overseas-safety-map-app<br/>(Flutter repo)"]
         Actions["GitHub Actions<br/>(CI/CD)"]
     end
@@ -143,7 +143,7 @@ graph TB
 
 ## 2. デプロイフロー
 
-### 2.1 Go サーバー側（reearth-homework リポジトリ）
+### 2.1 Go サーバー側（overseas-safety-map リポジトリ）
 
 ```
 開発者 push to feature branch

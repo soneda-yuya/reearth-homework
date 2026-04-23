@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/cmsx"
-	"github.com/soneda-yuya/reearth-homework/internal/safetyincident/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/cmsx"
+	"github.com/soneda-yuya/overseas-safety-map/internal/safetyincident/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // ItemClient is the subset of cmsx.Client this adapter calls. Declared as

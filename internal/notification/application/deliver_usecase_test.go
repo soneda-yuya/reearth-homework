@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/notification/application"
-	"github.com/soneda-yuya/reearth-homework/internal/notification/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/application"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 func sampleEvent() domain.NewArrivalEvent {

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/mapboxx"
-	"github.com/soneda-yuya/reearth-homework/internal/safetyincident/infrastructure/geocode"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/mapboxx"
+	"github.com/soneda-yuya/overseas-safety-map/internal/safetyincident/infrastructure/geocode"
 )
 
 type stubMapboxClient struct {

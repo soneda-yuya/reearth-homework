@@ -13,8 +13,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/retry"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/retry"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // Config holds Mapbox credentials and timeouts.

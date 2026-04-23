@@ -10,7 +10,7 @@ import (
 
 	pubsub "cloud.google.com/go/pubsub/v2"
 
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // Config identifies the Pub/Sub project. Authentication is handled by

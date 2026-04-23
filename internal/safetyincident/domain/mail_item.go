@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // MailItem is the unprocessed MOFA item — what comes out of the XML parser

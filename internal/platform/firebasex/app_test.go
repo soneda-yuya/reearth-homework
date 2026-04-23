@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/firebasex"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/firebasex"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // TestNewApp_RequiresProjectID is the one guard we can check without a live

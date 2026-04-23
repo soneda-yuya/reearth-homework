@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/observability"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/observability"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 func setupForTest(t *testing.T) {

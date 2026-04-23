@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/observability"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/observability"
 )
 
 // HandlerRegistration binds a Connect handler (path, http.Handler) produced by

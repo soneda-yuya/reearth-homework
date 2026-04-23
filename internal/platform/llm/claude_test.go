@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/llm"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/llm"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 func newTestClient(h http.HandlerFunc) (*llm.Client, *httptest.Server) {

@@ -7,9 +7,9 @@ package cmsclient
 import (
 	"context"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/application"
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/cmsx"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/application"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/cmsx"
 )
 
 // SchemaClient is the subset of cmsx.Client the adapter needs. Keeping it as

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package overseasmap.v1;
 
-option go_package = "github.com/soneda-yuya/reearth-homework/gen/go/v1;overseasmapv1";
+option go_package = "github.com/soneda-yuya/overseas-safety-map/gen/go/v1;overseasmapv1";
 
 import "google/protobuf/timestamp.proto";
 import "v1/common.proto";

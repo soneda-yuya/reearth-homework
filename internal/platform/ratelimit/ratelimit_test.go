@@ -3,8 +3,8 @@ package ratelimit_test
 import (
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/ratelimit"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/ratelimit"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 func TestLimiter_AllowsInitialBurst(t *testing.T) {

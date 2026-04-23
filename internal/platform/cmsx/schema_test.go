@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/cmsx"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/retry"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/cmsx"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/retry"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // fastRetryPolicy is the policy used by tests that exercise the retry path.

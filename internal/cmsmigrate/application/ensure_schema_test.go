@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/application"
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/application"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 func TestExecute_FirstRun_CreatesEverything(t *testing.T) {

@@ -87,7 +87,7 @@ ListSafetyIncidents / GetSafetyIncidentDetail / ListNearby / SearchSafetyInciden
 
 ## 6. リポジトリとディレクトリ構造（予定）
 
-### 本リポジトリ（`reearth-homework`）: Go サーバーモノレポ — **DDD（Bounded Context × Layered Architecture）**
+### 本リポジトリ（`overseas-safety-map`）: Go サーバーモノレポ — **DDD（Bounded Context × Layered Architecture）**
 
 #### 設計原則
 - **Bounded Context を `internal/` 直下で分離**: それぞれに閉じた `domain` / `application` / `infrastructure` レイヤを持つ。

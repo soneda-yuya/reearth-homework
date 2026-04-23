@@ -14,8 +14,8 @@ import (
 	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/soneda-yuya/reearth-homework/internal/notification/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // DeliverNotificationUseCase orchestrates one Pub/Sub push delivery:

@@ -6,8 +6,8 @@ package geocode
 import (
 	"context"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/mapboxx"
-	"github.com/soneda-yuya/reearth-homework/internal/safetyincident/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/mapboxx"
+	"github.com/soneda-yuya/overseas-safety-map/internal/safetyincident/domain"
 )
 
 // MapboxClient is the subset of mapboxx.Client we use. Declared as an

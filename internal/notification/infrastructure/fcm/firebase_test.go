@@ -3,7 +3,7 @@ package fcm_test
 import (
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/notification/infrastructure/fcm"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/infrastructure/fcm"
 )
 
 // TestNew_Smoke exercises the constructor. The real classification logic

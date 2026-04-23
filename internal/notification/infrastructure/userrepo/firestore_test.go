@@ -3,7 +3,7 @@ package userrepo_test
 import (
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/notification/infrastructure/userrepo"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/infrastructure/userrepo"
 )
 
 // TestNew_AppliesDefaults covers constructor defaults. The actual Firestore

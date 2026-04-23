@@ -11,7 +11,7 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // Policy controls retry behaviour.

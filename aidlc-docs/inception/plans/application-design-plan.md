@@ -41,7 +41,7 @@
 ### Question 1 — リポジトリ構成
 ソースコードのリポジトリ構成はどうしますか？
 
-A) **モノレポ**（この `reearth-homework` リポジトリに Go / Flutter / ドキュメントをすべて配置、ディレクトリで分ける）
+A) **モノレポ**（この `overseas-safety-map` リポジトリに Go / Flutter / ドキュメントをすべて配置、ディレクトリで分ける）
 B) **2 リポジトリ分割**（サーバー側 Go モノレポ + Flutter 専用リポジトリ）
 C) **マルチリポジトリ**（pipeline / bff / setup-script / flutter-app で4リポジトリに分ける）
 X) Other（[Answer]: の後ろに自由記述）

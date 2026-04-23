@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/infrastructure/cmsclient"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/cmsx"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/infrastructure/cmsclient"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/cmsx"
 )
 
 // stubClient is the minimum cmsx-shaped surface the adapter uses. Returning

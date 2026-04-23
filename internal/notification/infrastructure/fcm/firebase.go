@@ -7,8 +7,8 @@ import (
 
 	"firebase.google.com/go/v4/messaging"
 
-	"github.com/soneda-yuya/reearth-homework/internal/notification/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/shared/errs"
+	"github.com/soneda-yuya/overseas-safety-map/internal/notification/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
 // FirebaseFCM implements domain.FCMClient via firebase.google.com/go/v4.

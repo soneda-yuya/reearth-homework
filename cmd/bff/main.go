@@ -10,9 +10,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/soneda-yuya/reearth-homework/internal/platform/config"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/connectserver"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/observability"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/config"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/connectserver"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/observability"
 )
 
 type bffConfig struct {

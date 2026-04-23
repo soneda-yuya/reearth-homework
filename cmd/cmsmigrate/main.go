@@ -12,12 +12,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/application"
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/domain"
-	"github.com/soneda-yuya/reearth-homework/internal/cmsmigrate/infrastructure/cmsclient"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/cmsx"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/config"
-	"github.com/soneda-yuya/reearth-homework/internal/platform/observability"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/application"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
+	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/infrastructure/cmsclient"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/cmsx"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/config"
+	"github.com/soneda-yuya/overseas-safety-map/internal/platform/observability"
 )
 
 // cmsmigrateConfig embeds the platform Common block and layers on the three

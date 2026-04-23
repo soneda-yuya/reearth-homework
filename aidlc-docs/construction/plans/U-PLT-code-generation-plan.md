@@ -30,7 +30,7 @@ PR A を先にマージ → PR B を cherry で追加。どちらもレビュー
 
 ### Phase 1: プロジェクト初期化
 
-- [ ] **Step 1**: `go.mod` を初期化（`module github.com/soneda-yuya/reearth-homework`、`go 1.26`）、`tools.go` を作成（buf/connect-go/protoc-gen-go のビルド時依存を宣言）
+- [ ] **Step 1**: `go.mod` を初期化（`module github.com/soneda-yuya/overseas-safety-map`、`go 1.26`）、`tools.go` を作成（buf/connect-go/protoc-gen-go のビルド時依存を宣言）
 - [ ] **Step 2**: ディレクトリ構造作成（`cmd/{ingestion,bff,notifier,setup}`、`internal/platform/{config,observability,retry,ratelimit,connectserver,cmsx,firebasex,pubsubx,mapboxx}`、`internal/shared/{errs,clock,validate}`、`proto/v1`、`gen/go/v1`、`terraform`、`.github/workflows`）
 - [ ] **Step 3**: `.gitignore` / `.dockerignore` / `.env.example` / `Makefile` の雛形
 
