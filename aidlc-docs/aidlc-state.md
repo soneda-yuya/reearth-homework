@@ -5,7 +5,7 @@
 - **プロジェクトタイプ**: グリーンフィールド
 - **開始日**: 2026-04-20T17:55:00Z（アイデア変更のリセット）
 - **現在のフェーズ**: CONSTRUCTION
-- **現在のステージ**: U-NTF（Notifier Unit、Sprint 4）／ Minimal 合本版 — 計画 Q1-Q8 作成、回答待ち
+- **現在のステージ**: U-NTF（Notifier Unit、Sprint 4）／ Minimal 合本版 — design 本編生成済み、PR レビュー待ち
 
 ## ワークフロー圧縮方針（2026-04-22 採用）
 **U-CSS 以降の Unit は Functional Design / NFR Requirements / NFR Design を「Minimal 合本版」1 ドキュメントにまとめる**。U-PLT で共通規約を確定したため、各 Unit 固有の内容のみを簡潔に記述する。Infrastructure Design / Code Generation / Build & Test は従来どおり独立して実施する。
@@ -77,7 +77,8 @@
 - [x] ビルドとテスト（Build and Test runbook template、PR #35 merged 2026-04-23、実 API 疎通は運用フェーズで実施）
 
 #### U-NTF（進行中、Sprint 4）
-- [ ] Minimal 合本版（Functional + NFR Req + NFR Design）— 計画 Q1-Q8 作成、回答待ち
+- [x] Minimal 合本版 計画（PR #36 merged 2026-04-23、Q1-Q8 全 A）
+- [ ] Minimal 合本版（Functional + NFR Req + NFR Design）— design 本編生成済み、PR レビュー待ち
 - [ ] インフラ設計（Infrastructure Design）
 - [ ] コード生成（Code Generation）
 - [ ] ビルドとテスト（Build and Test）

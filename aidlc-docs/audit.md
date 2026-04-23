@@ -1055,3 +1055,27 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成して計画レビュー依頼。回答後に U-NTF-design.md (合本版) を生成する。
 
 ---
+
+## U-NTF Plan Answered + Design Generated
+
+**Timestamp**: 2026-04-23T09:30:00Z
+**User Input**: 8 質問を 1 つずつチャットで確認 → 全て A で回答
+**AI Actions**:
+1. plan ファイルに Q1-Q8 全て `[A]: A` を記入、最終確認欄を Q&A 要旨で埋めた。
+2. PR #36 auto-merge (commit `884ae40`)。
+3. Feature branch `feature/u-ntf-design` を切って `construction/U-NTF/design/U-NTF-design.md` (Minimal 合本版) を生成:
+   - **Functional Design**: notification BC、Domain (UserProfile / Subscriber / FCMMessage / BatchResult / NewArrivalEvent)、4 Port (Dedup / UserRepository / FCMClient / EventDecoder)、DeliverNotificationUseCase (dedup → resolve → send + cleanup)、HTTP Handler (Pub/Sub push endpoint)、Infrastructure Adapters 構成 (dedup/firestore、userrepo/firestore、fcm/firebase、eventdecoder/pubsub_envelope)、Composition Root、Sequence
+   - **NFR Requirements (U-NTF 固有)**: PERF (p95 < 3s, ack_deadline 60s に余裕)、SEC (ADC / Runtime SA 最小権限)、REL (dedup / Pub/Sub retry / DLQ)、OPS (status code 別 metric)、TEST (層別カバレッジ、SDK 部分は fake)、EXT (他 channel / 他 dedup store)
+   - **NFR Design Patterns**: Transactional Dedup / HTTP Status Code 戦略 / Skip-on-invalid-token / Port-Adapter / 並列度制御 + 無効 token 即時除去
+   - 運用ランブック (簡略) + 未決事項 (Infra へ) + トレーサビリティ表
+4. aidlc-state.md を「design 本編生成済み、PR レビュー待ち」に更新。
+
+**Decisions frozen**:
+- Push Subscription (Cloud Run Service、雛形と整合) / Firestore dedup (24h TTL、key_cd key)
+- country + enabled の Firestore query + info_types in-memory filter / SendMulticast 並列度 5
+- 無効 token の即時除去 / HTTP status code 細かい使い分け (200 x 3 種 / 400 / 500)
+- Span 4 + Metric 6 + phase 属性ログ / 層別カバレッジ (domain 95 / app 90 / infra 70 / 全体 85)
+
+**Context**: PR を作成してレビュー依頼。承認後 U-NTF Infrastructure Design へ進む。
+
+---
