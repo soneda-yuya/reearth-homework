@@ -182,7 +182,7 @@ B) 1 PR で全部
 C) 3 PR (domain+app / infra adapters / cmd+terraform+docs)
   - 依存関係的に 2 PR で十分、3 分割は過剰
 
-[A]:
+[A]: A
 
 ### Question B — LLM プロバイダ抽象化の粒度
 
@@ -203,7 +203,7 @@ C) A の亜流: `platform/llm` 自体作らず、Claude は `infrastructure/llm/
   - ✅ パッケージ数最小
   - ⚠️ 将来 BFF 側や他 Bounded Context でも LLM 使うなら platform に出したほうが良い (footprint が予想しやすい)
 
-[A]:
+[A]: A
 
 ### Question C — MOFA XML のパーサー戦略
 
@@ -224,7 +224,7 @@ C) XML ではなく JSON API を探す
   - ⚠️ MOFA 公式は XML のみ、選択肢なし
   - 除外
 
-[A]:
+[A]: A
 
 ### Question D — Terraform 変更を本 PR に含めるか、別途か
 
@@ -239,7 +239,7 @@ B) Terraform は別 PR に分離
   - ⚠️ 2 PR をセットでマージしないとインフラとコードが整合しない期間ができる
   - 採用しない
 
-[A]:
+[A]: A
 
 ### Question E — `country_centroids.json` データの出典
 
@@ -254,7 +254,7 @@ C) 外部 API を叩く
   - ⚠️ ランタイム依存 ↑、キャッシュ複雑度 ↑
   - 採用しない
 
-[A]:
+[A]: A
 
 ### Question F — テスト戦略 (U-CSS と同じ方針で OK か確認)
 
@@ -269,17 +269,17 @@ A) **推奨**:
 B) カバレッジ目標なし、質的テスト重視
 C) 全パッケージで 90%+
 
-[A]:
+[A]: A
 
 ---
 
-## 承認前の最終確認 (回答後に AI が埋めます)
+## 承認前の最終確認 (回答確定)
 
-- A: PR 分割方針: _TBD_
-- B: LLM 抽象化の粒度: _TBD_
-- C: MOFA パーサー戦略: _TBD_
-- D: Terraform の PR 同梱: _TBD_
-- E: 国 centroid データ出典: _TBD_
-- F: カバレッジ目標: _TBD_
+- **Q A [A]**: PR 分割 = **2 PR** (PR A: Phase 1-7 Go ロジック、PR B: Phase 8-11 結線)
+- **Q B [A]**: LLM 抽象化 = `LocationExtractor` Port のみ (`platform/llm/claude.go` は薄い concrete、YAGNI)
+- **Q C [A]**: MOFA XML パーサー = 仮定構造で先行実装、実 XML は Build and Test で答え合わせ
+- **Q D [A]**: Terraform = PR B に同梱 (U-CSS と同じ運用)
+- **Q E [A]**: country centroid データ = Natural Earth 由来 CC0 (~250 国、go:embed)
+- **Q F [A]**: カバレッジ目標 = U-CSS と同じ層別 (domain 95% / app 90% / infra 70% / 全体 85%)、PBT は point.Validate のみ
 
-回答完了後、矛盾・曖昧さがなければ Phase 1-11 を順次実装 → PR 作成 (Q A [A] の場合は 2 PR)。
+回答確定済み。Phase 1-11 を 2 PR で順次実装する。PR A → merge → PR B の順序。
