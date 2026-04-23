@@ -1226,3 +1226,31 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: PR 作成して計画レビュー依頼。回答後に U-BFF-design.md (合本版) を生成する。
 
 ---
+
+## U-BFF Plan Answered + Design Generated
+
+**Timestamp**: 2026-04-23T15:30:00Z
+**User Input**: 9 質問を 1 つずつチャットで確認 → 全て A で回答
+**AI Actions**:
+1. plan ファイルに Q1-Q9 全て `[A]: A` を記入、最終確認欄を Q&A 要旨で埋めた。
+2. PR #43 auto-merge (commit `deabc7c`)。U-BFF Minimal 合本版 計画完了。
+3. Feature branch `feature/u-bff-design` を切って `construction/U-BFF/design/U-BFF-design.md` (Minimal 合本版) を生成:
+   - **Functional Design**: 11 RPC (3 Service)、`safetyincident`/`crimemap`/`user` 3 BC、SafetyIncidentReader port (新規、U-ING の Writer port と独立)、ProfileRepository + AuthVerifier port、CMSReader / FirestoreProfileRepository / FirebaseAuthVerifier adapter、ErrorInterceptor + AuthInterceptor、Composition Root の DI 配線
+   - **NFR Requirements (U-BFF 固有)**: PERF (p95 < 500ms、Choropleth p95 < 1s、cold start < 3s)、SEC (Firebase ID Token 必須、Firestore Security Rules、メッセージマスク)、REL (idempotent)、OPS、TEST (層別カバレッジ)、EXT
+   - **NFR Design Patterns**: Interceptor Chain / Reader Port + Aggregator / Firestore 共有 collection / errs → Connect code 自動変換 / 冪等 Profile 書き込み
+4. aidlc-state.md を「design 本編生成済み、PR レビュー待ち」に更新。
+
+**Decisions frozen**:
+- 全 RPC で Firebase ID Token 必須 (Q1)
+- CMS キャッシュなし、毎回 CMS 直 (Q2)
+- CrimeMap は in-memory Aggregator、color サーバ計算 (Q3)
+- UserProfile は U-NTF と Firestore users 共有 (Q4)
+- FCM Token ArrayUnion 冪等 (Q5)
+- Connect error code は errs.KindOf 一律マッピング + prod でマスク (Q6)
+- 4 Metric + phase 属性ログ (Q7)
+- 層別カバレッジ + connecttest e2e (Q8)
+- 2 PR 分割 (PR A Go / PR B 結線) (Q9)
+
+**Context**: PR 作成してレビュー依頼。承認後 U-BFF Infrastructure Design へ進む。
+
+---
