@@ -868,3 +868,32 @@ PR #10 では Copilot から計 **35 件** の review comment を受領し、全
 **Context**: PR を作成して計画レビュー依頼。回答後に U-ING-design.md (合本版) を生成する。
 
 ---
+
+## U-ING Plan Answered (Q1-Q9 全 A) + Design Generated
+
+**Timestamp**: 2026-04-23T02:30:00Z
+**User Input**: 9 質問を 1 つずつチャットで確認 → 全て A で回答（質問形式: "質問を1つずつチャットで確認してもらいながら答えても良いですか？"）
+**AI Actions**:
+1. plan ファイルに Q1-Q9 全て `[A]: A` を記入、最終確認欄を Q&A 要旨で埋めた。
+2. PR #28 を auto-merge (commit `6babf04`)。同時に Dependabot 系 4 PR も merge 済み (#15, #17, #18, deploy.yml 修正)。
+3. Feature branch `feature/u-ing-design` を切って `construction/U-ING/design/U-ING-design.md` (Minimal 合本版) を生成:
+   - **Functional Design**: safetyincident BC、Domain (MailItem / SafetyIncident / Point / GeocodeSource)、4 Port (MofaSource / LocationExtractor / Geocoder / Repository / EventPublisher)、IngestUseCase アルゴリズム (Validate → Fetch → 並列 process per item with skip-and-continue)、Infrastructure Adapters 構成 (mofa / llm/claude / geocode/chain / cms/repository / eventbus)、Composition Root config 拡張、Sequence
+   - **NFR Requirements (U-ING 固有)**: PERF (Run < 60s, initial < 30min, p95 per-item < 5s)、SEC-01-04 (Secret 管理、PII redact、最小権限 SA)、REL-01-04 (idempotency, skip-continue, retry, fallback)、OPS-01-04、TEST-01-05 (PBT + fake シナリオ + 層別カバレッジ目標)、EXT-01-03
+   - **NFR Design Patterns**: Skip-and-Continue / Geocoder Chain / Idempotent Upsert / Rate Limiting / Mode Switching
+   - 運用ランブック (簡略) + 未決事項 (Infra に持ち越し) + トレーサビリティ表
+4. aidlc-state.md を「design 本編生成済み、PR レビュー待ち」に更新。
+
+**Decisions frozen**:
+- 取り込みモード: initial + incremental 両方、INGESTION_MODE env 切替 (Q1)
+- ポーリング: 5 分毎 (Q2)
+- 重複排除: CMS lookup (Q3) — Source of Truth は CMS、local cache 不使用
+- LLM: 1 件ずつ + 並列度 5 + LLM 5 req/s (Q4 + Q8)
+- ジオコード失敗時: 国 Centroid フォールバック、source 識別 (Q5)
+- Pub/Sub: CMS upsert 直後 1 件ずつ publish (Q6)
+- エラー: skip + 構造化ログ + Metric、Run exit 0 (Q7) — 次回 Run で自然リトライ
+- Rate limit: app 側で先制制御 (LLM 5 req/s, Mapbox 10 req/s) (Q8)
+- テスト: domain PBT + application fake シナリオ、infra は MOFA fixture + httptest、層別カバレッジ目標 (Q9)
+
+**Context**: PR を作成してレビュー依頼。承認後 U-ING Infrastructure Design へ進む。
+
+---
