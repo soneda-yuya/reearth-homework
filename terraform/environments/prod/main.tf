@@ -1,11 +1,19 @@
 provider "google" {
   project = var.project_id
   region  = var.region
+
+  # Firebase API 等の一部 API は user credentials だと quota project を明示しないと
+  # 403 を返す。Service account credentials でも害は無いので常に有効化しておく。
+  user_project_override = true
+  billing_project       = var.project_id
 }
 
 provider "google-beta" {
   project = var.project_id
   region  = var.region
+
+  user_project_override = true
+  billing_project       = var.project_id
 }
 
 locals {
