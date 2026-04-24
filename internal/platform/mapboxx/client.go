@@ -50,11 +50,16 @@ func (c *Client) Close(_ context.Context) error { return nil }
 
 // GeocodeResult is the trimmed shape we care about from Mapbox: the first
 // feature's coordinate plus its relevance score (a 0..1 confidence).
+//
+// CountryCd is the ISO 3166-1 alpha-2 code of the feature's containing
+// country, extracted from Mapbox's "context" hierarchy. Upstream callers
+// use it to backfill MailItem.CountryCd when MOFA did not provide one.
 type GeocodeResult struct {
 	Lat       float64
 	Lng       float64
 	Relevance float64
 	PlaceName string
+	CountryCd string
 }
 
 // Geocode resolves a free-form location string. country (ISO alpha-2)
@@ -115,6 +120,7 @@ func (c *Client) Geocode(ctx context.Context, location, countryCdISO string) (Ge
 				Lat:       f.Center[1],
 				Relevance: f.Relevance,
 				PlaceName: f.PlaceName,
+				CountryCd: f.countryFromContext(),
 			}
 			return nil
 		case resp.StatusCode == http.StatusUnauthorized,
@@ -137,7 +143,91 @@ type mapboxResponse struct {
 }
 
 type mapboxFeature struct {
-	PlaceName string    `json:"place_name"`
-	Center    []float64 `json:"center"` // [lng, lat]
-	Relevance float64   `json:"relevance"`
+	PlaceName  string            `json:"place_name"`
+	Center     []float64         `json:"center"` // [lng, lat]
+	Relevance  float64           `json:"relevance"`
+	PlaceTypes []string          `json:"place_type"`
+	Properties mapboxProperties  `json:"properties"`
+	Context    []mapboxContextEl `json:"context"`
+}
+
+// mapboxProperties carries the ISO code when the feature *itself* is a
+// country (place_type includes "country"). For sub-national features the
+// country lives in the Context hierarchy instead.
+type mapboxProperties struct {
+	ShortCode string `json:"short_code"`
+}
+
+// mapboxContextEl mirrors one hop in Mapbox's place hierarchy (e.g. a
+// city feature has {id:"country.xxx", short_code:"de", ...} as one of its
+// context entries).
+type mapboxContextEl struct {
+	ID        string `json:"id"`
+	ShortCode string `json:"short_code"`
+}
+
+// countryFromContext returns the ISO 3166-1 alpha-2 code of the feature's
+// containing country (upper-cased), or "" if Mapbox did not surface one.
+// Order of precedence:
+//
+//  1. The feature itself is a country — short_code in Properties wins
+//  2. Otherwise the country is a hop in Context with id prefix "country."
+//
+// Mapbox's short_code can include subdivisions for US states (e.g.
+// "us-ca"); we strip anything after the first hyphen so the returned code
+// is always a 2-letter ISO alpha-2.
+func (f mapboxFeature) countryFromContext() string {
+	isCountry := false
+	for _, pt := range f.PlaceTypes {
+		if pt == "country" {
+			isCountry = true
+			break
+		}
+	}
+	pick := func(s string) string {
+		if s == "" {
+			return ""
+		}
+		if i := indexByte(s, '-'); i >= 0 {
+			s = s[:i]
+		}
+		return toUpperASCII(s)
+	}
+	if isCountry {
+		return pick(f.Properties.ShortCode)
+	}
+	for _, ctx := range f.Context {
+		if hasPrefix(ctx.ID, "country.") {
+			return pick(ctx.ShortCode)
+		}
+	}
+	return ""
+}
+
+// indexByte avoids pulling in "strings" for a one-off — the package already
+// imports net/url, encoding/json, etc., so keeping mapboxx free of
+// "strings" keeps the dep surface tight.
+func indexByte(s string, b byte) int {
+	for i := 0; i < len(s); i++ {
+		if s[i] == b {
+			return i
+		}
+	}
+	return -1
+}
+
+func hasPrefix(s, prefix string) bool {
+	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
+}
+
+func toUpperASCII(s string) string {
+	b := make([]byte, len(s))
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'a' && c <= 'z' {
+			c -= 'a' - 'A'
+		}
+		b[i] = c
+	}
+	return string(b)
 }

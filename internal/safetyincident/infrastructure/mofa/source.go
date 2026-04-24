@@ -133,6 +133,13 @@ func convert(raw rawItem) (domain.MailItem, bool) {
 	if !ok {
 		return domain.MailItem{}, false
 	}
+	// MOFA sends its own numeric country codes (e.g. 0049 for Germany). We
+	// convert to ISO 3166-1 alpha-2 here so every downstream consumer —
+	// centroid lookup, CMS storage, Flutter map — sees the standard form.
+	// Unknown codes are passed through empty; the geocoder chain is
+	// responsible for backfilling via Mapbox when country data is missing.
+	mofaCountry := raw.flatCountryCd()
+	countryCd := MOFACodeToISO(mofaCountry)
 	return domain.MailItem{
 		KeyCd:       raw.KeyCd,
 		InfoType:    raw.InfoType,
@@ -146,7 +153,7 @@ func convert(raw rawItem) (domain.MailItem, bool) {
 		KoukanName:  raw.KoukanName,
 		AreaCd:      raw.flatAreaCd(),
 		AreaName:    raw.flatAreaName(),
-		CountryCd:   raw.flatCountryCd(),
+		CountryCd:   countryCd,
 		CountryName: raw.flatCountryName(),
 	}, true
 }

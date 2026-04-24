@@ -12,11 +12,11 @@
     <koukanCd>FR001</koukanCd>
     <koukanName>在フランス日本国大使館</koukanName>
     <area>
-      <cd>EU</cd>
+      <cd>42</cd>
       <name>ヨーロッパ</name>
     </area>
-    <country areaCd="EU">
-      <cd>FR</cd>
+    <country areaCd="42">
+      <cd>0033</cd>
       <name>フランス</name>
     </country>
   </mail>
@@ -32,11 +32,11 @@
     <koukanCd>ID001</koukanCd>
     <koukanName>在インドネシア日本国大使館</koukanName>
     <area>
-      <cd>AS</cd>
+      <cd>10</cd>
       <name>アジア</name>
     </area>
-    <country areaCd="AS">
-      <cd>ID</cd>
+    <country areaCd="10">
+      <cd>0062</cd>
       <name>インドネシア</name>
     </country>
   </mail>
@@ -52,11 +52,11 @@
     <koukanCd>GB001</koukanCd>
     <koukanName>在英国日本国大使館</koukanName>
     <area>
-      <cd>EU</cd>
+      <cd>42</cd>
       <name>ヨーロッパ</name>
     </area>
-    <country areaCd="EU">
-      <cd>GB</cd>
+    <country areaCd="42">
+      <cd>0044</cd>
       <name>英国</name>
     </country>
   </mail>
@@ -65,8 +65,8 @@
     <infoType>spot</infoType>
     <leaveDate>not-a-date</leaveDate>
     <title>(parse-skip テスト用)</title>
-    <country areaCd="AS">
-      <cd>JP</cd>
+    <country areaCd="10">
+      <cd>0081</cd>
       <name>日本</name>
     </country>
   </mail>

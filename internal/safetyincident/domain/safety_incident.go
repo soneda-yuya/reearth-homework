@@ -20,8 +20,13 @@ type SafetyIncident struct {
 //
 // The fallback semantics live in the Geocoder chain — by the time we reach
 // here, geocode.Source already tells us whether the coordinate came from
-// Mapbox or the country centroid.
+// Mapbox or the country centroid. When the MailItem lacks a country_cd
+// (MOFA occasionally ships items without <country>) we backfill from the
+// geocoder result, which extracted one from Mapbox's context.
 func Build(item MailItem, extract ExtractResult, geocode GeocodeResult, now time.Time) SafetyIncident {
+	if item.CountryCd == "" {
+		item.CountryCd = geocode.CountryCd
+	}
 	return SafetyIncident{
 		MailItem:          item,
 		ExtractedLocation: extract.Location,

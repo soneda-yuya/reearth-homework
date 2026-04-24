@@ -11,13 +11,14 @@ import (
 )
 
 type stubMapboxLookup struct {
-	point domain.Point
-	ok    bool
-	err   error
+	point     domain.Point
+	countryCd string
+	ok        bool
+	err       error
 }
 
-func (s *stubMapboxLookup) Lookup(_ context.Context, _, _ string) (domain.Point, bool, error) {
-	return s.point, s.ok, s.err
+func (s *stubMapboxLookup) Lookup(_ context.Context, _, _ string) (geocode.MapboxHit, bool, error) {
+	return geocode.MapboxHit{Point: s.point, CountryCd: s.countryCd}, s.ok, s.err
 }
 
 type stubCentroid struct {
