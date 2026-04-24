@@ -35,8 +35,24 @@ type sampleReader struct {
 	lastSearchFilter domain.SearchFilter
 }
 
-func (r *sampleReader) List(context.Context, domain.ListFilter) ([]domain.SafetyIncident, string, error) {
-	return r.items, r.nextCursor, nil
+func (r *sampleReader) List(_ context.Context, f domain.ListFilter) ([]domain.SafetyIncident, string, error) {
+	// Honour the leave window when set so tests can exercise the filter
+	// plumbing end-to-end. Zero time keeps existing callers unaffected
+	// (the CMS reader uses the same IsZero() sentinel).
+	if f.LeaveFrom.IsZero() && f.LeaveTo.IsZero() {
+		return r.items, r.nextCursor, nil
+	}
+	out := make([]domain.SafetyIncident, 0, len(r.items))
+	for _, it := range r.items {
+		if !f.LeaveFrom.IsZero() && it.LeaveDate.Before(f.LeaveFrom) {
+			continue
+		}
+		if !f.LeaveTo.IsZero() && it.LeaveDate.After(f.LeaveTo) {
+			continue
+		}
+		out = append(out, it)
+	}
+	return out, r.nextCursor, nil
 }
 func (r *sampleReader) Get(_ context.Context, keyCd string) (*domain.SafetyIncident, error) {
 	for _, it := range r.items {
@@ -293,6 +309,44 @@ func TestCrimeMap_Heatmap(t *testing.T) {
 	}
 	if len(res.Msg.Points) != 2 {
 		t.Errorf("points = %d", len(res.Msg.Points))
+	}
+}
+
+// TestCrimeMap_Heatmap_EmptyFilterKeepsLeaveWindowOpen guards the regression
+// where an empty-but-non-nil CrimeMapFilter silently turned into a
+// leave_date ∈ [1970-01-01, 1970-01-01] window and zeroed out the response.
+// Dart's grpc client always sends a filter wrapper (even when the user has
+// not set any dates), so this was the user-facing bug that blanked the
+// Flutter map tab.
+func TestCrimeMap_Heatmap_EmptyFilterKeepsLeaveWindowOpen(t *testing.T) {
+	t.Parallel()
+	client := newCrimeMapTestServer(t)
+	req := connect.NewRequest(&overseasmapv1.GetHeatmapRequest{
+		Filter: &overseasmapv1.CrimeMapFilter{},
+	})
+	withAuth(req)
+	res, err := client.GetHeatmap(context.Background(), req)
+	if err != nil {
+		t.Fatalf("GetHeatmap: %v", err)
+	}
+	if len(res.Msg.Points) != 2 {
+		t.Errorf("points = %d; want 2 — empty filter must not collapse the leave window", len(res.Msg.Points))
+	}
+}
+
+func TestCrimeMap_Choropleth_EmptyFilterKeepsLeaveWindowOpen(t *testing.T) {
+	t.Parallel()
+	client := newCrimeMapTestServer(t)
+	req := connect.NewRequest(&overseasmapv1.GetChoroplethRequest{
+		Filter: &overseasmapv1.CrimeMapFilter{},
+	})
+	withAuth(req)
+	res, err := client.GetChoropleth(context.Background(), req)
+	if err != nil {
+		t.Fatalf("GetChoropleth: %v", err)
+	}
+	if res.Msg.Total != 2 {
+		t.Errorf("total = %d; want 2 — empty filter must not collapse the leave window", res.Msg.Total)
 	}
 }
 
