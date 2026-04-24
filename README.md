@@ -133,6 +133,12 @@ gcloud run jobs execute cms-migrate \
 
 `cmd/ingestion` は MOFA 海外安全情報 XML を取得し、Claude で発生地名を抽出 → Mapbox でジオコード（失敗時は国 Centroid フォールバック）→ reearth-cms に upsert → Pub/Sub 通知、までを行う Cloud Run Job です。Cloud Scheduler が `*/5 * * * *` で `incremental` モードを起動します。
 
+**データソース (MOFA)**:
+- 本番配信 API パス: `https://www.ezairyu.mofa.go.jp/opendata/area/` (※ `/html/opendata/` はブラウザ用ランディングでサンプル 3 件のみ、本番は `/html` 無しの path)
+- 新着 (48h): `newarrivalA.xml` / 全量 (1年): `00A.xml` / 地域別: `{地域コード}A.xml` / 国別: `country/{国コード}A.xml`
+- 更新頻度: 約 5 分毎
+- [MOFA 利用マニュアル PDF (v1.2)](https://www.ezairyu.mofa.go.jp/html/opendata/support/usemanual.pdf) — URL / XML schema / 地域&国コード体系
+
 **必須 env**:
 
 ```
@@ -151,7 +157,7 @@ INGESTION_PUBSUB_TOPIC_ID=projects/overseas-safety-map/topics/safety-incident.ne
 
 ```
 INGESTION_MODE=incremental                 # initial | incremental
-INGESTION_MOFA_BASE_URL=https://www.ezairyu.mofa.go.jp/html/opendata
+INGESTION_MOFA_BASE_URL=https://www.ezairyu.mofa.go.jp/opendata/area
 INGESTION_CMS_PROJECT_ALIAS=overseas-safety-map
 INGESTION_CMS_MODEL_ALIAS=safety-incident
 INGESTION_CMS_KEY_FIELD=key_cd
