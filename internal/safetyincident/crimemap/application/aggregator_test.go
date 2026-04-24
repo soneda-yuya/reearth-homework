@@ -91,6 +91,57 @@ func TestChoropleth_Aggregation(t *testing.T) {
 	}
 }
 
+func TestChoropleth_SkipsEmptyCountry(t *testing.T) {
+	t.Parallel()
+	items := []safetyincident.SafetyIncident{
+		{
+			MailItem: safetyincident.MailItem{
+				KeyCd: "K1", CountryCd: "JP", CountryName: "日本",
+				LeaveDate: time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC),
+			},
+			Geometry:      safetyincident.Point{Lat: 35, Lng: 139},
+			GeocodeSource: safetyincident.GeocodeSourceMapbox,
+		},
+		// cd present, name missing — must be omitted from the choropleth.
+		{
+			MailItem: safetyincident.MailItem{
+				KeyCd: "K2", CountryCd: "US", CountryName: "",
+				LeaveDate: time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC),
+			},
+			Geometry:      safetyincident.Point{Lat: 40, Lng: -74},
+			GeocodeSource: safetyincident.GeocodeSourceMapbox,
+		},
+		// Both missing — must be omitted too.
+		{
+			MailItem: safetyincident.MailItem{
+				KeyCd: "K3", CountryCd: "", CountryName: "",
+				LeaveDate: time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC),
+			},
+			Geometry:      safetyincident.Point{Lat: 0, Lng: 0},
+			GeocodeSource: safetyincident.GeocodeSourceCountryCentroid,
+		},
+	}
+	agg := application.NewAggregator(&stubReader{items: items})
+	res, err := agg.Choropleth(context.Background(), crimemap.CrimeMapFilter{})
+	if err != nil {
+		t.Fatalf("Choropleth: %v", err)
+	}
+	// Total still reflects the corpus size so the UI "全 N 件" legend is
+	// honest about how many items were considered.
+	if res.Total != 3 {
+		t.Errorf("Total = %d; want 3 (corpus count is unaffected by the filter)", res.Total)
+	}
+	if len(res.Items) != 1 {
+		t.Fatalf("len(Items) = %d; want 1 (only JP has a country name)", len(res.Items))
+	}
+	if res.Items[0].CountryCd != "JP" || res.Items[0].CountryName != "日本" {
+		t.Errorf("Items[0] = %+v; want JP/日本", res.Items[0])
+	}
+	if res.Items[0].Count != 1 {
+		t.Errorf("JP count = %d; want 1", res.Items[0].Count)
+	}
+}
+
 func TestChoropleth_EmptyCorpus(t *testing.T) {
 	t.Parallel()
 	agg := application.NewAggregator(&stubReader{})
