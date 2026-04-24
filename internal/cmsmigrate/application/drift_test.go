@@ -68,8 +68,9 @@ func TestExecute_DriftReportedForTypeMismatch(t *testing.T) {
 	}
 }
 
-// TestExecute_DriftReportedForFlagMismatch checks that required / unique /
-// multiple mismatches each surface in the reason string.
+// TestExecute_DriftReportedForFlagMismatch checks that required / multiple
+// mismatches each surface in the reason string. The unique flag is not
+// compared because the Integration API does not surface it (see drift.go).
 func TestExecute_DriftReportedForFlagMismatch(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

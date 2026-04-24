@@ -118,8 +118,12 @@ func fieldDTOTo(dto *cmsx.FieldDTO) *application.RemoteField {
 		Alias:    dto.Alias,
 		Type:     dto.ToDomainType(),
 		Required: dto.Required,
-		// Unique is not part of the wire response; leave false and rely on
-		// definitions for drift detection.
+		// Unique is intentionally left as the zero value: reearth-cms's
+		// Integration API does not surface the unique flag on field GET,
+		// so we cannot observe the server-side truth. detectFieldDrift
+		// compensates by skipping the unique comparison, preventing a
+		// false-positive drift warning for every Unique-declared field
+		// (notably key_cd).
 		Unique:   false,
 		Multiple: dto.Multiple,
 	}

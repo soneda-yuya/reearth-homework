@@ -19,6 +19,13 @@ type DriftWarning struct {
 // detectFieldDrift compares what the CMS returned against what we declared.
 // Unknown / non-blocking differences (e.g. ID, underlying CMS type aliases)
 // are ignored on purpose so the drift signal stays high-signal.
+//
+// Uniqueness is deliberately NOT compared: reearth-cms's Integration API does
+// not surface the unique flag on field GET, so RemoteField.Unique is always
+// false. Comparing it would emit a permanent drift warning for every field
+// declared Unique (notably key_cd), drowning real drift in noise. We accept
+// that undetected unique flips on the CMS side will not surface here and
+// rely on schema changes being driven through cmsmigrate.
 func detectFieldDrift(modelAlias string, got RemoteField, want domain.FieldDefinition) *DriftWarning {
 	var reasons []string
 	if got.Type != want.Type {
@@ -26,9 +33,6 @@ func detectFieldDrift(modelAlias string, got RemoteField, want domain.FieldDefin
 	}
 	if got.Required != want.Required {
 		reasons = append(reasons, fmt.Sprintf("required=%t want=%t", got.Required, want.Required))
-	}
-	if got.Unique != want.Unique {
-		reasons = append(reasons, fmt.Sprintf("unique=%t want=%t", got.Unique, want.Unique))
 	}
 	if got.Multiple != want.Multiple {
 		reasons = append(reasons, fmt.Sprintf("multiple=%t want=%t", got.Multiple, want.Multiple))
