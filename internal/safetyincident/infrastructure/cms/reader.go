@@ -17,18 +17,20 @@ import (
 // Declared as an interface so tests can swap in a stub that does not
 // spin up an httptest server.
 type ReaderClient interface {
-	ListItems(ctx context.Context, modelID string, q cmsx.ListItemsQuery) (cmsx.ListItemsResult, error)
-	SearchItems(ctx context.Context, modelID string, q cmsx.ListItemsQuery) (cmsx.ListItemsResult, error)
-	FindItemByFieldValue(ctx context.Context, modelID, fieldKey, value string) (*cmsx.ItemDTO, error)
+	ListItems(ctx context.Context, projectID, modelID string, q cmsx.ListItemsQuery) (cmsx.ListItemsResult, error)
+	SearchItems(ctx context.Context, projectID, modelID string, q cmsx.ListItemsQuery) (cmsx.ListItemsResult, error)
+	FindItemByFieldValue(ctx context.Context, projectID, modelID, fieldKey, value string) (*cmsx.ItemDTO, error)
 }
 
-// Reader fulfils domain.SafetyIncidentReader against reearth-cms. modelID
-// and keyField are resolved by U-CSS at startup, same as Repository on the
-// write side.
+// Reader fulfils domain.SafetyIncidentReader against reearth-cms. projectID,
+// modelID and keyField are resolved by U-CSS at startup, same as Repository
+// on the write side. projectID is required because reearth-cms's item paths
+// nest under /{workspace}/projects/{project}/models/{model}/items.
 type Reader struct {
-	client   ReaderClient
-	modelID  string
-	keyField string
+	client    ReaderClient
+	projectID string
+	modelID   string
+	keyField  string
 	// nearbyFetchCap bounds the ListNearby broad fetch. Larger than the
 	// caller's limit because the distance filter prunes most of the set;
 	// smaller than the full corpus so a truly empty ListFilter does not
@@ -37,9 +39,10 @@ type Reader struct {
 }
 
 // NewReader returns a Reader wired to the same Model the Repository writes to.
-func NewReader(client ReaderClient, modelID, keyField string) *Reader {
+func NewReader(client ReaderClient, projectID, modelID, keyField string) *Reader {
 	return &Reader{
 		client:         client,
+		projectID:      projectID,
 		modelID:        modelID,
 		keyField:       keyField,
 		nearbyFetchCap: 1000,
@@ -50,7 +53,7 @@ func NewReader(client ReaderClient, modelID, keyField string) *Reader {
 // to the CMS; the returned nextCursor is likewise opaque.
 func (r *Reader) List(ctx context.Context, filter domain.ListFilter) ([]domain.SafetyIncident, string, error) {
 	q := listQueryFromFilter(filter)
-	res, err := r.client.ListItems(ctx, r.modelID, q)
+	res, err := r.client.ListItems(ctx, r.projectID, r.modelID, q)
 	if err != nil {
 		return nil, "", errs.Wrap("cms.reader.list", errs.KindOf(err), err)
 	}
@@ -71,7 +74,7 @@ func (r *Reader) Get(ctx context.Context, keyCd string) (*domain.SafetyIncident,
 		return nil, errs.Wrap("cms.reader.get", errs.KindInvalidInput,
 			errors.New("key_cd is required"))
 	}
-	dto, err := r.client.FindItemByFieldValue(ctx, r.modelID, r.keyField, keyCd)
+	dto, err := r.client.FindItemByFieldValue(ctx, r.projectID, r.modelID, r.keyField, keyCd)
 	if err != nil {
 		return nil, errs.Wrap("cms.reader.get", errs.KindOf(err), err)
 	}
@@ -109,7 +112,7 @@ func (r *Reader) Search(ctx context.Context, filter domain.SearchFilter) ([]doma
 	if !filter.LeaveTo.IsZero() {
 		q.Filters["leave_to"] = filter.LeaveTo.UTC().Format(time.RFC3339)
 	}
-	res, err := r.client.SearchItems(ctx, r.modelID, q)
+	res, err := r.client.SearchItems(ctx, r.projectID, r.modelID, q)
 	if err != nil {
 		return nil, "", errs.Wrap("cms.reader.search", errs.KindOf(err), err)
 	}
@@ -132,7 +135,7 @@ func (r *Reader) ListNearby(ctx context.Context, center domain.Point, radiusKm f
 		return nil, errs.Wrap("cms.reader.list_nearby", errs.KindInvalidInput,
 			errors.New("radius_km and limit must be positive"))
 	}
-	res, err := r.client.ListItems(ctx, r.modelID, cmsx.ListItemsQuery{Limit: r.nearbyFetchCap})
+	res, err := r.client.ListItems(ctx, r.projectID, r.modelID, cmsx.ListItemsQuery{Limit: r.nearbyFetchCap})
 	if err != nil {
 		return nil, errs.Wrap("cms.reader.list_nearby", errs.KindOf(err), err)
 	}

@@ -11,29 +11,34 @@ import (
 	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
+// Item responses now embed a typed array; canned responses reflect the real
+// reearth-cms wire shape: `fields: [{id?,key,type,value}]`.
+const itemIResp = `{"id":"i-1","fields":[{"key":"key_cd","type":"text","value":"X"}]}`
+
 func TestFindItemByFieldValue_Hit(t *testing.T) {
 	t.Parallel()
 	c, srv := newClient(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.URL.Path, "/api/models/m-1/items") {
-			t.Errorf("path = %q", r.URL.Path)
+		if got, want := r.URL.Path, "/api/ws-1/projects/p-1/models/m-1/items"; got != want {
+			t.Errorf("path = %q want %q", got, want)
 		}
-		if got := r.URL.Query().Get("key"); got != "key_cd" {
-			t.Errorf("key query = %q", got)
+		if got := r.URL.Query().Get("keyword"); got != "X" {
+			t.Errorf("keyword query = %q", got)
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"items": []map[string]any{
-				{"id": "i-1", "fields": map[string]any{"key_cd": "X"}},
-			},
+			"items": []json.RawMessage{json.RawMessage(itemIResp)},
 		})
 	})
 	defer srv.Close()
 
-	got, err := c.FindItemByFieldValue(context.Background(), "m-1", "key_cd", "X")
+	got, err := c.FindItemByFieldValue(context.Background(), "p-1", "m-1", "key_cd", "X")
 	if err != nil {
 		t.Fatalf("FindItemByFieldValue: %v", err)
 	}
 	if got == nil || got.ID != "i-1" {
 		t.Errorf("got %+v, want id=i-1", got)
+	}
+	if v, _ := got.Fields["key_cd"].(string); v != "X" {
+		t.Errorf("decoded field key_cd = %v, want X", got.Fields["key_cd"])
 	}
 }
 
@@ -45,14 +50,14 @@ func TestFindItemByFieldValue_QueryEscapesSpecialChars(t *testing.T) {
 	t.Parallel()
 	const trickyValue = "MOFA+2026 04/23&id=001"
 	c, srv := newClient(func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("value"); got != trickyValue {
-			t.Errorf("value query = %q, want %q", got, trickyValue)
+		if got := r.URL.Query().Get("keyword"); got != trickyValue {
+			t.Errorf("keyword query = %q, want %q", got, trickyValue)
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 	})
 	defer srv.Close()
 
-	if _, err := c.FindItemByFieldValue(context.Background(), "m-1", "key_cd", trickyValue); err != nil {
+	if _, err := c.FindItemByFieldValue(context.Background(), "p-1", "m-1", "key_cd", trickyValue); err != nil {
 		t.Fatalf("FindItemByFieldValue: %v", err)
 	}
 }
@@ -64,7 +69,7 @@ func TestFindItemByFieldValue_Miss_EmptyArray(t *testing.T) {
 	})
 	defer srv.Close()
 
-	got, err := c.FindItemByFieldValue(context.Background(), "m-1", "key_cd", "missing")
+	got, err := c.FindItemByFieldValue(context.Background(), "p-1", "m-1", "key_cd", "missing")
 	if err != nil {
 		t.Fatalf("FindItemByFieldValue: %v", err)
 	}
@@ -81,7 +86,7 @@ func TestFindItemByFieldValue_404IsTreatedAsMiss(t *testing.T) {
 	})
 	defer srv.Close()
 
-	got, err := c.FindItemByFieldValue(context.Background(), "m-1", "key_cd", "missing")
+	got, err := c.FindItemByFieldValue(context.Background(), "p-1", "m-1", "key_cd", "missing")
 	if err != nil {
 		t.Fatalf("FindItemByFieldValue should swallow 404: %v", err)
 	}
@@ -97,25 +102,38 @@ func TestCreateItem_PostsFields(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s", r.Method)
 		}
-		if !strings.HasSuffix(r.URL.Path, "/api/models/m-1/items") {
+		if !strings.HasSuffix(r.URL.Path, "/api/ws-1/projects/p-1/models/m-1/items") {
 			t.Errorf("path = %q", r.URL.Path)
 		}
 		_ = json.NewDecoder(r.Body).Decode(&posted)
 		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":"i-new","fields":{"key_cd":"X"}}`))
+		_, _ = w.Write([]byte(`{"id":"i-new","fields":[{"key":"key_cd","type":"text","value":"X"}]}`))
 	})
 	defer srv.Close()
 
-	got, err := c.CreateItem(context.Background(), "m-1", map[string]any{"key_cd": "X", "title": "T"})
+	got, err := c.CreateItem(context.Background(), "p-1", "m-1", map[string]any{"key_cd": "X", "title": "T"})
 	if err != nil {
 		t.Fatalf("CreateItem: %v", err)
 	}
 	if got.ID != "i-new" {
 		t.Errorf("id = %q", got.ID)
 	}
-	fields, _ := posted["fields"].(map[string]any)
-	if fields == nil || fields["key_cd"] != "X" || fields["title"] != "T" {
-		t.Errorf("posted fields = %v", posted)
+	fields, _ := posted["fields"].([]any)
+	if len(fields) != 2 {
+		t.Fatalf("posted fields len = %d, want 2 (%v)", len(fields), posted)
+	}
+	// Each entry carries key/type/value; order is map-iteration-dependent so
+	// assert via a set check.
+	keys := map[string]bool{}
+	for _, f := range fields {
+		m, _ := f.(map[string]any)
+		keys[m["key"].(string)] = true
+		if m["type"] != "text" {
+			t.Errorf("type = %v, want text", m["type"])
+		}
+	}
+	if !keys["key_cd"] || !keys["title"] {
+		t.Errorf("keys = %v, want both key_cd and title", keys)
 	}
 }
 
@@ -125,14 +143,14 @@ func TestUpdateItem_PatchesItem(t *testing.T) {
 		if r.Method != http.MethodPatch {
 			t.Errorf("method = %s, want PATCH", r.Method)
 		}
-		if !strings.HasSuffix(r.URL.Path, "/api/items/i-1") {
+		if !strings.HasSuffix(r.URL.Path, "/api/ws-1/projects/p-1/models/m-1/items/i-1") {
 			t.Errorf("path = %q", r.URL.Path)
 		}
-		_, _ = w.Write([]byte(`{"id":"i-1","fields":{"title":"updated"}}`))
+		_, _ = w.Write([]byte(`{"id":"i-1","fields":[{"key":"title","type":"text","value":"updated"}]}`))
 	})
 	defer srv.Close()
 
-	got, err := c.UpdateItem(context.Background(), "i-1", map[string]any{"title": "updated"})
+	got, err := c.UpdateItem(context.Background(), "p-1", "m-1", "i-1", map[string]any{"title": "updated"})
 	if err != nil {
 		t.Fatalf("UpdateItem: %v", err)
 	}
@@ -151,14 +169,14 @@ func TestUpsertItemByFieldValue_CreatesWhenMissing(t *testing.T) {
 			_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 		case http.MethodPost:
 			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":"i-new","fields":{"key_cd":"X"}}`))
+			_, _ = w.Write([]byte(`{"id":"i-new","fields":[{"key":"key_cd","type":"text","value":"X"}]}`))
 		default:
 			t.Errorf("unexpected method %s", r.Method)
 		}
 	})
 	defer srv.Close()
 
-	got, err := c.UpsertItemByFieldValue(context.Background(), "m-1", "key_cd", "X",
+	got, err := c.UpsertItemByFieldValue(context.Background(), "p-1", "m-1", "key_cd", "X",
 		map[string]any{"key_cd": "X", "title": "T"})
 	if err != nil {
 		t.Fatalf("UpsertItemByFieldValue: %v", err)
@@ -179,19 +197,17 @@ func TestUpsertItemByFieldValue_UpdatesWhenFound(t *testing.T) {
 		switch r.Method {
 		case http.MethodGet:
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"items": []map[string]any{
-					{"id": "i-existing", "fields": map[string]any{"key_cd": "X"}},
-				},
+				"items": []json.RawMessage{json.RawMessage(`{"id":"i-existing","fields":[{"key":"key_cd","type":"text","value":"X"}]}`)},
 			})
 		case http.MethodPatch:
-			_, _ = w.Write([]byte(`{"id":"i-existing","fields":{"title":"T2"}}`))
+			_, _ = w.Write([]byte(`{"id":"i-existing","fields":[{"key":"title","type":"text","value":"T2"}]}`))
 		default:
 			t.Errorf("unexpected method %s", r.Method)
 		}
 	})
 	defer srv.Close()
 
-	got, err := c.UpsertItemByFieldValue(context.Background(), "m-1", "key_cd", "X",
+	got, err := c.UpsertItemByFieldValue(context.Background(), "p-1", "m-1", "key_cd", "X",
 		map[string]any{"title": "T2"})
 	if err != nil {
 		t.Fatalf("UpsertItemByFieldValue: %v", err)
@@ -213,7 +229,7 @@ func TestCreateItem_AuthFailureNoRetry(t *testing.T) {
 	})
 	defer srv.Close()
 
-	_, err := c.CreateItem(context.Background(), "m-1", map[string]any{})
+	_, err := c.CreateItem(context.Background(), "p-1", "m-1", map[string]any{"key_cd": "X"})
 	if err == nil {
 		t.Fatal("expected error")
 	}
