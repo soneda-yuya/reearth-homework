@@ -64,12 +64,23 @@ func listFilterFromProto(f *overseasmapv1.SafetyIncidentFilter) safetyincident.L
 	if f == nil {
 		return safetyincident.ListFilter{}
 	}
+	// A nil *timestamppb.Timestamp surfaces through .AsTime() as the Unix
+	// epoch (1970-01-01), NOT time.Time{}. Downstream callers use IsZero()
+	// to decide whether to apply the leave window; bypassing that via a
+	// nil check keeps "no leave filter" semantics intact.
+	var leaveFrom, leaveTo time.Time
+	if ts := f.GetLeaveFrom(); ts != nil {
+		leaveFrom = ts.AsTime()
+	}
+	if ts := f.GetLeaveTo(); ts != nil {
+		leaveTo = ts.AsTime()
+	}
 	return safetyincident.ListFilter{
 		AreaCd:    f.GetAreaCd(),
 		CountryCd: f.GetCountryCd(),
 		InfoTypes: f.GetInfoTypes(),
-		LeaveFrom: f.GetLeaveFrom().AsTime(),
-		LeaveTo:   f.GetLeaveTo().AsTime(),
+		LeaveFrom: leaveFrom,
+		LeaveTo:   leaveTo,
 		Limit:     int(f.GetLimit()),
 		Cursor:    f.GetCursor(),
 	}
