@@ -144,9 +144,9 @@ func convert(raw rawItem) (domain.MailItem, bool) {
 		InfoURL:     raw.InfoURL,
 		KoukanCd:    raw.KoukanCd,
 		KoukanName:  raw.KoukanName,
-		AreaCd:      raw.AreaCd,
-		AreaName:    raw.AreaName,
-		CountryCd:   raw.CountryCd,
-		CountryName: raw.CountryName,
+		AreaCd:      raw.flatAreaCd(),
+		AreaName:    raw.flatAreaName(),
+		CountryCd:   raw.flatCountryCd(),
+		CountryName: raw.flatCountryName(),
 	}, true
 }

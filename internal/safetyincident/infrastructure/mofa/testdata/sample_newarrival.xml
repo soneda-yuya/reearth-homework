@@ -1,58 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<items>
-  <item>
-    <key_cd>2026-04-23-001</key_cd>
-    <info_type>spot</info_type>
-    <info_name>スポット情報</info_name>
-    <leave_date>2026-04-23T05:30:00Z</leave_date>
+<opendata dataType="A" lastModified="2026/04/23 09:00:00" mailCount="4" odType="02">
+  <mail>
+    <keyCd>2026-04-23-001</keyCd>
+    <infoType>spot</infoType>
+    <infoName>スポット情報</infoName>
+    <leaveDate>2026-04-23T05:30:00Z</leaveDate>
     <title>パリ市内におけるデモ情報</title>
     <lead>パリ市内中心部でデモが計画されています。</lead>
-    <main_text>4月25日(金)、パリ市内中心部(Place de la République 等)においてデモが計画されています。当日は周辺道路の通行規制等が予想されますので、不要不急の同地域への接近は避けて下さい。</main_text>
-    <info_url>https://www.example.mofa.go.jp/safety/2026/0423-001.html</info_url>
-    <koukan_cd>FR001</koukan_cd>
-    <koukan_name>在フランス日本国大使館</koukan_name>
-    <area_cd>EU</area_cd>
-    <area_name>ヨーロッパ</area_name>
-    <country_cd>FR</country_cd>
-    <country_name>フランス</country_name>
-  </item>
-  <item>
-    <key_cd>2026-04-23-002</key_cd>
-    <info_type>danger</info_type>
-    <info_name>危険情報</info_name>
-    <leave_date>2026-04-23T07:15:00Z</leave_date>
+    <mainText>4月25日(金)、パリ市内中心部(Place de la République 等)においてデモが計画されています。当日は周辺道路の通行規制等が予想されますので、不要不急の同地域への接近は避けて下さい。</mainText>
+    <infoUrl>https://www.example.mofa.go.jp/safety/2026/0423-001.html</infoUrl>
+    <koukanCd>FR001</koukanCd>
+    <koukanName>在フランス日本国大使館</koukanName>
+    <area>
+      <cd>EU</cd>
+      <name>ヨーロッパ</name>
+    </area>
+    <country areaCd="EU">
+      <cd>FR</cd>
+      <name>フランス</name>
+    </country>
+  </mail>
+  <mail>
+    <keyCd>2026-04-23-002</keyCd>
+    <infoType>danger</infoType>
+    <infoName>危険情報</infoName>
+    <leaveDate>2026-04-23T07:15:00Z</leaveDate>
     <title>(注意喚起) ジャカルタ南部における強盗事件発生</title>
     <lead>ジャカルタ南部で日本人を狙った強盗事件が発生しました。</lead>
-    <main_text>4月22日深夜、ジャカルタ南部の繁華街において、日本人渡航者を狙った強盗事件が発生しました。当該地域への深夜の単独行動は避け、移動の際は配車アプリ等を活用して下さい。</main_text>
-    <info_url>https://www.example.mofa.go.jp/safety/2026/0423-002.html</info_url>
-    <koukan_cd>ID001</koukan_cd>
-    <koukan_name>在インドネシア日本国大使館</koukan_name>
-    <area_cd>AS</area_cd>
-    <area_name>アジア</area_name>
-    <country_cd>ID</country_cd>
-    <country_name>インドネシア</country_name>
-  </item>
-  <item>
-    <key_cd>2026-04-23-003</key_cd>
-    <info_type>spot</info_type>
-    <info_name>スポット情報</info_name>
-    <leave_date>2026-04-23T09:00:00Z</leave_date>
+    <mainText>4月22日深夜、ジャカルタ南部の繁華街において、日本人渡航者を狙った強盗事件が発生しました。当該地域への深夜の単独行動は避け、移動の際は配車アプリ等を活用して下さい。</mainText>
+    <infoUrl>https://www.example.mofa.go.jp/safety/2026/0423-002.html</infoUrl>
+    <koukanCd>ID001</koukanCd>
+    <koukanName>在インドネシア日本国大使館</koukanName>
+    <area>
+      <cd>AS</cd>
+      <name>アジア</name>
+    </area>
+    <country areaCd="AS">
+      <cd>ID</cd>
+      <name>インドネシア</name>
+    </country>
+  </mail>
+  <mail>
+    <keyCd>2026-04-23-003</keyCd>
+    <infoType>spot</infoType>
+    <infoName>スポット情報</infoName>
+    <leaveDate>2026-04-23T09:00:00Z</leaveDate>
     <title>ロンドンにおける地下鉄ストライキの可能性</title>
     <lead>ロンドンの地下鉄でストライキが実施される可能性があります。</lead>
-    <main_text>5月初旬にロンドンの地下鉄(Underground)においてストライキが実施される可能性があります。最新情報は Transport for London の公式サイトを参照して下さい。</main_text>
-    <info_url>https://www.example.mofa.go.jp/safety/2026/0423-003.html</info_url>
-    <koukan_cd>GB001</koukan_cd>
-    <koukan_name>在英国日本国大使館</koukan_name>
-    <area_cd>EU</area_cd>
-    <area_name>ヨーロッパ</area_name>
-    <country_cd>GB</country_cd>
-    <country_name>英国</country_name>
-  </item>
-  <item>
-    <key_cd>2026-04-23-004-bad-date</key_cd>
-    <info_type>spot</info_type>
-    <leave_date>not-a-date</leave_date>
+    <mainText>5月初旬にロンドンの地下鉄(Underground)においてストライキが実施される可能性があります。最新情報は Transport for London の公式サイトを参照して下さい。</mainText>
+    <infoUrl>https://www.example.mofa.go.jp/safety/2026/0423-003.html</infoUrl>
+    <koukanCd>GB001</koukanCd>
+    <koukanName>在英国日本国大使館</koukanName>
+    <area>
+      <cd>EU</cd>
+      <name>ヨーロッパ</name>
+    </area>
+    <country areaCd="EU">
+      <cd>GB</cd>
+      <name>英国</name>
+    </country>
+  </mail>
+  <mail>
+    <keyCd>2026-04-23-004-bad-date</keyCd>
+    <infoType>spot</infoType>
+    <leaveDate>not-a-date</leaveDate>
     <title>(parse-skip テスト用)</title>
-    <country_cd>JP</country_cd>
-  </item>
-</items>
+    <country areaCd="AS">
+      <cd>JP</cd>
+      <name>日本</name>
+    </country>
+  </mail>
+</opendata>

@@ -28,8 +28,13 @@ variable "github_repository" {
 
 # ---- External configuration ------------------------------------------------
 variable "mofa_base_url" {
-  type    = string
-  default = "https://www.ezairyu.mofa.go.jp/html/opendata"
+  type = string
+  # MOFA OpenData serves the XML downloads under /html/opendata/area/.
+  # The previous default without /area returned the HTML landing page,
+  # which the XML decoder rejected with "expected element <items> but
+  # have <html>". The code appends /newarrivalA.xml or /00A.xml under
+  # this base.
+  default = "https://www.ezairyu.mofa.go.jp/html/opendata/area"
 }
 
 variable "cms_base_url" {
