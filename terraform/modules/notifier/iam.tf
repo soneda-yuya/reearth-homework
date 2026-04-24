@@ -6,8 +6,11 @@ resource "google_project_iam_member" "datastore" {
 
 resource "google_project_iam_member" "fcm" {
   project = var.project_id
-  role    = "roles/cloudmessaging.messagesSender"
-  member  = "serviceAccount:${google_service_account.runtime.email}"
+  # roles/cloudmessaging.messagesSender is a legacy role and is not supported
+  # at the project scope. For FCM v1 HTTP API sends via Firebase Admin SDK,
+  # the project-level role is roles/firebasecloudmessaging.admin.
+  role   = "roles/firebasecloudmessaging.admin"
+  member = "serviceAccount:${google_service_account.runtime.email}"
 }
 
 # Pub/Sub push delivers with an OIDC token signed by the runtime SA
