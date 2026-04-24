@@ -1,6 +1,7 @@
 package cms
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -123,11 +124,32 @@ func optionalTime(f map[string]any, key string) (time.Time, error) {
 // parseGeometry decodes the GeoJSON-ish {type: "Point", coordinates: [lng, lat]}
 // shape produced by toFields. Returns a zero Point with KindInternal when
 // the shape is unrecognisable — we persisted it, so we must decode it.
+//
+// reearth-cms round-trips geometryObject fields as a JSON-stringified
+// object on read (even though we POST a real object), so we accept both
+// forms: pass a map[string]any through directly, or json.Unmarshal when the
+// server handed us back a string.
 func parseGeometry(v any) (domain.Point, error) {
-	obj, ok := v.(map[string]any)
-	if !ok {
+	var obj map[string]any
+	switch t := v.(type) {
+	case map[string]any:
+		obj = t
+	case string:
+		if t == "" {
+			return domain.Point{}, errs.Wrap("cms.from_fields.geometry",
+				errs.KindInternal, fmt.Errorf("geometry is empty string"))
+		}
+		if err := json.Unmarshal([]byte(t), &obj); err != nil {
+			return domain.Point{}, errs.Wrap("cms.from_fields.geometry",
+				errs.KindInternal, fmt.Errorf("geometry string is not JSON: %w", err))
+		}
+	default:
 		return domain.Point{}, errs.Wrap("cms.from_fields.geometry",
-			errs.KindInternal, fmt.Errorf("geometry is not an object"))
+			errs.KindInternal, fmt.Errorf("geometry is not an object (got %T)", v))
+	}
+	if obj == nil {
+		return domain.Point{}, errs.Wrap("cms.from_fields.geometry",
+			errs.KindInternal, fmt.Errorf("geometry object is nil"))
 	}
 	coordsRaw, ok := obj["coordinates"].([]any)
 	if !ok || len(coordsRaw) < 2 {
