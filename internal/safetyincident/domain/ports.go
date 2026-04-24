@@ -46,9 +46,15 @@ type Geocoder interface {
 // GeocodeResult carries both the resolved Point and the chain stage that
 // produced it. Callers persist Source so downstream UI can label "approximate
 // (country level)" pins.
+//
+// CountryCd, when non-empty, is the ISO 3166-1 alpha-2 code the geocoder
+// derived from the location. Ingestion uses this to backfill MailItem.CountryCd
+// on items where MOFA shipped no <country> element, so the resulting
+// SafetyIncident still carries a usable country for filters / flags.
 type GeocodeResult struct {
-	Point  Point
-	Source GeocodeSource
+	Point     Point
+	Source    GeocodeSource
+	CountryCd string
 }
 
 // Repository is the CMS persistence port. Exists is split out from Upsert so

@@ -16,12 +16,21 @@ type MapboxClient interface {
 	Geocode(ctx context.Context, location, countryCdISO string) (mapboxx.GeocodeResult, error)
 }
 
-// MapboxGeocoder is the first link in the chain. It returns a Point if
+// MapboxGeocoder is the first link in the chain. It returns a MapboxHit
+// (Point + ISO country derived from Mapbox's context hierarchy) when
 // Mapbox is confident enough; the caller decides what to do with low
 // relevance / empty result (see ChainGeocoder).
 type MapboxGeocoder struct {
 	client       MapboxClient
 	minRelevance float64
+}
+
+// MapboxHit is the chain-local result shape. Kept separate from
+// domain.GeocodeResult so this package does not leak its internal "bool ok"
+// signal into the domain port.
+type MapboxHit struct {
+	Point     domain.Point
+	CountryCd string
 }
 
 // NewMapboxGeocoder configures a MapboxGeocoder. minRelevance ∈ [0, 1] —
@@ -35,17 +44,21 @@ func NewMapboxGeocoder(client MapboxClient, minRelevance float64) *MapboxGeocode
 
 // Lookup returns ok=false when Mapbox returned no usable feature. Errors
 // flow up — the chain decides whether to swallow them and fall through to
-// the centroid.
-func (g *MapboxGeocoder) Lookup(ctx context.Context, location, countryCd string) (domain.Point, bool, error) {
+// the centroid. CountryCd on the hit is populated from Mapbox's context
+// (ISO alpha-2) when the feature is inside a country; otherwise "".
+func (g *MapboxGeocoder) Lookup(ctx context.Context, location, countryCd string) (MapboxHit, bool, error) {
 	if location == "" {
-		return domain.Point{}, false, nil
+		return MapboxHit{}, false, nil
 	}
 	result, err := g.client.Geocode(ctx, location, countryCd)
 	if err != nil {
-		return domain.Point{}, false, err
+		return MapboxHit{}, false, err
 	}
 	if result == (mapboxx.GeocodeResult{}) || result.Relevance < g.minRelevance {
-		return domain.Point{}, false, nil
+		return MapboxHit{}, false, nil
 	}
-	return domain.Point{Lat: result.Lat, Lng: result.Lng}, true, nil
+	return MapboxHit{
+		Point:     domain.Point{Lat: result.Lat, Lng: result.Lng},
+		CountryCd: result.CountryCd,
+	}, true, nil
 }

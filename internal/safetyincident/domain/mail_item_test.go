@@ -35,7 +35,6 @@ func TestMailItem_Validate_Failures(t *testing.T) {
 		{"empty key_cd", func(m *domain.MailItem) { m.KeyCd = "" }, "key_cd"},
 		{"zero leave_date", func(m *domain.MailItem) { m.LeaveDate = time.Time{} }, "leave_date"},
 		{"empty title", func(m *domain.MailItem) { m.Title = "" }, "title"},
-		{"empty country_cd", func(m *domain.MailItem) { m.CountryCd = "" }, "country_cd"},
 	}
 	for _, tc := range tests {
 		tc := tc
@@ -57,6 +56,20 @@ func TestMailItem_Validate_Failures(t *testing.T) {
 	}
 }
 
+// TestMailItem_Validate_EmptyCountryCdIsAllowed documents the design: MOFA
+// occasionally ships items without a nested <country> element (global
+// advisories, sample entries). Validation lets them through and leaves the
+// geocoder chain to backfill country_cd from Mapbox — items that can't be
+// placed at all are dropped later by the use case, not here.
+func TestMailItem_Validate_EmptyCountryCdIsAllowed(t *testing.T) {
+	t.Parallel()
+	m := validMailItem()
+	m.CountryCd = ""
+	if err := m.Validate(); err != nil {
+		t.Fatalf("empty country_cd must pass validation (geocoder backfills): %v", err)
+	}
+}
+
 func TestMailItem_Validate_AggregatesViolations(t *testing.T) {
 	t.Parallel()
 	m := domain.MailItem{} // every required field empty
@@ -64,7 +77,7 @@ func TestMailItem_Validate_AggregatesViolations(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	for _, want := range []string{"key_cd", "leave_date", "title", "country_cd"} {
+	for _, want := range []string{"key_cd", "leave_date", "title"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("expected aggregated error to contain %q, got %q", want, err)
 		}

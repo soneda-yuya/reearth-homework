@@ -21,18 +21,21 @@ func (s *stubMapboxClient) Geocode(_ context.Context, _, _ string) (mapboxx.Geoc
 func TestMapboxGeocoder_HighRelevance_ReturnsPoint(t *testing.T) {
 	t.Parallel()
 	stub := &stubMapboxClient{
-		result: mapboxx.GeocodeResult{Lat: 35.69, Lng: 139.69, Relevance: 0.92},
+		result: mapboxx.GeocodeResult{Lat: 35.69, Lng: 139.69, Relevance: 0.92, CountryCd: "JP"},
 	}
 	g := geocode.NewMapboxGeocoder(stub, 0.5)
-	point, ok, err := g.Lookup(context.Background(), "Tokyo", "JP")
+	hit, ok, err := g.Lookup(context.Background(), "Tokyo", "JP")
 	if err != nil {
 		t.Fatalf("Lookup: %v", err)
 	}
 	if !ok {
 		t.Fatal("ok should be true for high relevance")
 	}
-	if point.Lat != 35.69 || point.Lng != 139.69 {
-		t.Errorf("point = %v", point)
+	if hit.Point.Lat != 35.69 || hit.Point.Lng != 139.69 {
+		t.Errorf("point = %v", hit.Point)
+	}
+	if hit.CountryCd != "JP" {
+		t.Errorf("CountryCd = %q, want JP (propagated from Mapbox context)", hit.CountryCd)
 	}
 }
 

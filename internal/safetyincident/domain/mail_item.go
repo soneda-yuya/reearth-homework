@@ -33,6 +33,12 @@ type MailItem struct {
 // Validate enforces the minimum invariants we need before the item can flow
 // through the use case. The remaining fields are best-effort: MOFA sometimes
 // publishes items with empty info_name or area_name.
+//
+// country_cd is intentionally NOT required at this layer: MOFA occasionally
+// publishes items without a nested <country> element (global advisories,
+// sample/template entries). The geocoder chain backfills the field from
+// Mapbox when a specific location can be resolved; items that fail even
+// that fallback are dropped later in the pipeline, not here.
 func (m MailItem) Validate() error {
 	var violations []error
 	if m.KeyCd == "" {
@@ -43,9 +49,6 @@ func (m MailItem) Validate() error {
 	}
 	if m.Title == "" {
 		violations = append(violations, errors.New("title is required"))
-	}
-	if m.CountryCd == "" {
-		violations = append(violations, errors.New("country_cd is required"))
 	}
 	if len(violations) == 0 {
 		return nil
