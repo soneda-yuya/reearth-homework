@@ -16,6 +16,13 @@ locals {
     "monitoring.googleapis.com",
     "logging.googleapis.com",
     "iam.googleapis.com",
+    # Bootstrap APIs: terraform 自身が google provider / google_project_service /
+    # tfstate bucket を扱うために必要。事前に手動 enable していても、
+    # 管理下に置いておくと disable 事故を防げる (disable_on_destroy = false)。
+    "cloudresourcemanager.googleapis.com",
+    "serviceusage.googleapis.com",
+    # Firebase: GCP プロジェクトを Firebase プロジェクトとして扱うのに必要。
+    "firebase.googleapis.com",
   ]
 }
 
