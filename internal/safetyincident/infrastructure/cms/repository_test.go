@@ -17,18 +17,19 @@ type stubItemClient struct {
 	findErr    error
 
 	upsertCalled struct {
-		modelID, fieldKey, value string
-		fields                   map[string]any
+		projectID, modelID, fieldKey, value string
+		fields                              map[string]any
 	}
 	upsertResult *cmsx.ItemDTO
 	upsertErr    error
 }
 
-func (s *stubItemClient) FindItemByFieldValue(_ context.Context, _, _, _ string) (*cmsx.ItemDTO, error) {
+func (s *stubItemClient) FindItemByFieldValue(_ context.Context, _, _, _, _ string) (*cmsx.ItemDTO, error) {
 	return s.findResult, s.findErr
 }
 
-func (s *stubItemClient) UpsertItemByFieldValue(_ context.Context, modelID, fieldKey, value string, fields map[string]any) (*cmsx.ItemDTO, error) {
+func (s *stubItemClient) UpsertItemByFieldValue(_ context.Context, projectID, modelID, fieldKey, value string, fields map[string]any) (*cmsx.ItemDTO, error) {
+	s.upsertCalled.projectID = projectID
 	s.upsertCalled.modelID = modelID
 	s.upsertCalled.fieldKey = fieldKey
 	s.upsertCalled.value = value
@@ -57,7 +58,7 @@ func sampleIncident() domain.SafetyIncident {
 func TestRepository_Exists_True(t *testing.T) {
 	t.Parallel()
 	stub := &stubItemClient{findResult: &cmsx.ItemDTO{ID: "i-1"}}
-	r := cms.New(stub, "m-1", "key_cd")
+	r := cms.New(stub, "p-1", "m-1", "key_cd")
 
 	exists, err := r.Exists(context.Background(), "k-1")
 	if err != nil {
@@ -71,7 +72,7 @@ func TestRepository_Exists_True(t *testing.T) {
 func TestRepository_Exists_False(t *testing.T) {
 	t.Parallel()
 	stub := &stubItemClient{findResult: nil}
-	r := cms.New(stub, "m-1", "key_cd")
+	r := cms.New(stub, "p-1", "m-1", "key_cd")
 
 	exists, err := r.Exists(context.Background(), "k-2")
 	if err != nil {
@@ -85,7 +86,7 @@ func TestRepository_Exists_False(t *testing.T) {
 func TestRepository_Exists_Error(t *testing.T) {
 	t.Parallel()
 	stub := &stubItemClient{findErr: errors.New("HTTP 500")}
-	r := cms.New(stub, "m-1", "key_cd")
+	r := cms.New(stub, "p-1", "m-1", "key_cd")
 
 	_, err := r.Exists(context.Background(), "k-3")
 	if err == nil {
@@ -95,7 +96,7 @@ func TestRepository_Exists_Error(t *testing.T) {
 
 func TestRepository_Exists_EmptyKey(t *testing.T) {
 	t.Parallel()
-	r := cms.New(&stubItemClient{}, "m-1", "key_cd")
+	r := cms.New(&stubItemClient{}, "p-1", "m-1", "key_cd")
 	_, err := r.Exists(context.Background(), "")
 	if err == nil {
 		t.Fatal("expected error for empty keyCd")
@@ -108,13 +109,13 @@ func TestRepository_Exists_EmptyKey(t *testing.T) {
 func TestRepository_Upsert_SendsAll19Fields(t *testing.T) {
 	t.Parallel()
 	stub := &stubItemClient{upsertResult: &cmsx.ItemDTO{ID: "i-new"}}
-	r := cms.New(stub, "m-1", "key_cd")
+	r := cms.New(stub, "p-1", "m-1", "key_cd")
 
 	if err := r.Upsert(context.Background(), sampleIncident()); err != nil {
 		t.Fatalf("Upsert: %v", err)
 	}
 
-	if stub.upsertCalled.modelID != "m-1" || stub.upsertCalled.fieldKey != "key_cd" || stub.upsertCalled.value != "k-1" {
+	if stub.upsertCalled.projectID != "p-1" || stub.upsertCalled.modelID != "m-1" || stub.upsertCalled.fieldKey != "key_cd" || stub.upsertCalled.value != "k-1" {
 		t.Errorf("call args = %+v", stub.upsertCalled)
 	}
 	want := []string{
@@ -144,7 +145,7 @@ func TestRepository_Upsert_SendsAll19Fields(t *testing.T) {
 func TestRepository_Upsert_PropagatesError(t *testing.T) {
 	t.Parallel()
 	stub := &stubItemClient{upsertErr: errors.New("HTTP 503")}
-	r := cms.New(stub, "m-1", "key_cd")
+	r := cms.New(stub, "p-1", "m-1", "key_cd")
 	if err := r.Upsert(context.Background(), sampleIncident()); err == nil {
 		t.Fatal("expected error")
 	}

@@ -19,22 +19,25 @@ import (
 // an interface so the test can swap a stub without setting up an HTTP
 // server.
 type ItemClient interface {
-	FindItemByFieldValue(ctx context.Context, modelID, fieldKey, value string) (*cmsx.ItemDTO, error)
-	UpsertItemByFieldValue(ctx context.Context, modelID, fieldKey, value string, fields map[string]any) (*cmsx.ItemDTO, error)
+	FindItemByFieldValue(ctx context.Context, projectID, modelID, fieldKey, value string) (*cmsx.ItemDTO, error)
+	UpsertItemByFieldValue(ctx context.Context, projectID, modelID, fieldKey, value string, fields map[string]any) (*cmsx.ItemDTO, error)
 }
 
-// Repository fulfils domain.Repository against reearth-cms. modelID is the
-// numeric/UUID resolved by U-CSS during schema apply; fieldKey is the
-// alias of the unique key field (typically "key_cd").
+// Repository fulfils domain.Repository against reearth-cms. projectID and
+// modelID are resolved by U-CSS during schema apply; fieldKey is the alias
+// of the unique key field (typically "key_cd"). projectID is required on
+// every request because reearth-cms nests item paths under the owning
+// project.
 type Repository struct {
-	client   ItemClient
-	modelID  string
-	keyField string
+	client    ItemClient
+	projectID string
+	modelID   string
+	keyField  string
 }
 
 // New returns a Repository wired to the given Model.
-func New(client ItemClient, modelID, keyField string) *Repository {
-	return &Repository{client: client, modelID: modelID, keyField: keyField}
+func New(client ItemClient, projectID, modelID, keyField string) *Repository {
+	return &Repository{client: client, projectID: projectID, modelID: modelID, keyField: keyField}
 }
 
 // Exists reports whether the CMS already has an item with the given key.
@@ -45,7 +48,7 @@ func (r *Repository) Exists(ctx context.Context, keyCd string) (bool, error) {
 			errs.KindInvalidInput,
 			errors.New("key_cd is required"))
 	}
-	dto, err := r.client.FindItemByFieldValue(ctx, r.modelID, r.keyField, keyCd)
+	dto, err := r.client.FindItemByFieldValue(ctx, r.projectID, r.modelID, r.keyField, keyCd)
 	if err != nil {
 		return false, errs.Wrap("cms.repository.exists", errs.KindOf(err), err)
 	}
@@ -57,7 +60,7 @@ func (r *Repository) Exists(ctx context.Context, keyCd string) (bool, error) {
 // the diff complexity at this scale.
 func (r *Repository) Upsert(ctx context.Context, incident domain.SafetyIncident) error {
 	fields := toFields(incident)
-	if _, err := r.client.UpsertItemByFieldValue(ctx, r.modelID, r.keyField, incident.KeyCd, fields); err != nil {
+	if _, err := r.client.UpsertItemByFieldValue(ctx, r.projectID, r.modelID, r.keyField, incident.KeyCd, fields); err != nil {
 		return errs.Wrap("cms.repository.upsert", errs.KindOf(err), err)
 	}
 	return nil

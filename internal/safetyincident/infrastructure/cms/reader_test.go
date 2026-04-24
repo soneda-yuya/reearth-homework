@@ -24,17 +24,17 @@ type stubReaderClient struct {
 	lastSearchQuery cmsx.ListItemsQuery
 }
 
-func (s *stubReaderClient) ListItems(_ context.Context, _ string, q cmsx.ListItemsQuery) (cmsx.ListItemsResult, error) {
+func (s *stubReaderClient) ListItems(_ context.Context, _, _ string, q cmsx.ListItemsQuery) (cmsx.ListItemsResult, error) {
 	s.lastListQuery = q
 	return s.listRes, s.listErr
 }
 
-func (s *stubReaderClient) SearchItems(_ context.Context, _ string, q cmsx.ListItemsQuery) (cmsx.ListItemsResult, error) {
+func (s *stubReaderClient) SearchItems(_ context.Context, _, _ string, q cmsx.ListItemsQuery) (cmsx.ListItemsResult, error) {
 	s.lastSearchQuery = q
 	return s.searchRes, s.searchErr
 }
 
-func (s *stubReaderClient) FindItemByFieldValue(_ context.Context, _, _, _ string) (*cmsx.ItemDTO, error) {
+func (s *stubReaderClient) FindItemByFieldValue(_ context.Context, _, _, _, _ string) (*cmsx.ItemDTO, error) {
 	return s.findRes, s.findErr
 }
 
@@ -66,7 +66,7 @@ func TestReaderList_DecodesItemsAndForwardsCursor(t *testing.T) {
 			NextCursor: "next-token",
 		},
 	}
-	reader := cms.NewReader(client, "m-1", "key_cd")
+	reader := cms.NewReader(client, "p-1", "m-1", "key_cd")
 
 	items, next, err := reader.List(context.Background(), domain.ListFilter{
 		CountryCd: "JP",
@@ -101,7 +101,7 @@ func TestReaderList_DecodesItemsAndForwardsCursor(t *testing.T) {
 func TestReaderList_ClientError(t *testing.T) {
 	t.Parallel()
 	client := &stubReaderClient{listErr: errs.Wrap("net", errs.KindExternal, errors.New("boom"))}
-	reader := cms.NewReader(client, "m-1", "key_cd")
+	reader := cms.NewReader(client, "p-1", "m-1", "key_cd")
 	if _, _, err := reader.List(context.Background(), domain.ListFilter{}); !errs.IsKind(err, errs.KindExternal) {
 		t.Errorf("err = %v", err)
 	}
@@ -110,7 +110,7 @@ func TestReaderList_ClientError(t *testing.T) {
 func TestReaderGet_Hit(t *testing.T) {
 	t.Parallel()
 	client := &stubReaderClient{findRes: &cmsx.ItemDTO{ID: "i-1", Fields: itemFields("K1", "JP", 35, 139, "mapbox")}}
-	reader := cms.NewReader(client, "m-1", "key_cd")
+	reader := cms.NewReader(client, "p-1", "m-1", "key_cd")
 	got, err := reader.Get(context.Background(), "K1")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
@@ -123,7 +123,7 @@ func TestReaderGet_Hit(t *testing.T) {
 func TestReaderGet_Miss(t *testing.T) {
 	t.Parallel()
 	client := &stubReaderClient{findRes: nil}
-	reader := cms.NewReader(client, "m-1", "key_cd")
+	reader := cms.NewReader(client, "p-1", "m-1", "key_cd")
 	_, err := reader.Get(context.Background(), "MISSING")
 	if !errs.IsKind(err, errs.KindNotFound) {
 		t.Errorf("err = %v; want KindNotFound", err)
@@ -132,7 +132,7 @@ func TestReaderGet_Miss(t *testing.T) {
 
 func TestReaderGet_EmptyKey(t *testing.T) {
 	t.Parallel()
-	reader := cms.NewReader(&stubReaderClient{}, "m-1", "key_cd")
+	reader := cms.NewReader(&stubReaderClient{}, "p-1", "m-1", "key_cd")
 	if _, err := reader.Get(context.Background(), ""); !errs.IsKind(err, errs.KindInvalidInput) {
 		t.Errorf("err = %v; want KindInvalidInput", err)
 	}
@@ -141,7 +141,7 @@ func TestReaderGet_EmptyKey(t *testing.T) {
 func TestReaderSearch_PassesKeyword(t *testing.T) {
 	t.Parallel()
 	client := &stubReaderClient{searchRes: cmsx.ListItemsResult{Items: []cmsx.ItemDTO{}}}
-	reader := cms.NewReader(client, "m-1", "key_cd")
+	reader := cms.NewReader(client, "p-1", "m-1", "key_cd")
 	if _, _, err := reader.Search(context.Background(), domain.SearchFilter{Query: "earthquake", CountryCd: "JP"}); err != nil {
 		t.Fatalf("Search: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestReaderListNearby_FiltersByDistance(t *testing.T) {
 			},
 		},
 	}
-	reader := cms.NewReader(client, "m-1", "key_cd")
+	reader := cms.NewReader(client, "p-1", "m-1", "key_cd")
 	center := domain.Point{Lat: 35.68, Lng: 139.76}
 	items, err := reader.ListNearby(context.Background(), center, 500, 10)
 	if err != nil {
@@ -181,7 +181,7 @@ func TestReaderListNearby_FiltersByDistance(t *testing.T) {
 
 func TestReaderListNearby_InvalidArgs(t *testing.T) {
 	t.Parallel()
-	reader := cms.NewReader(&stubReaderClient{}, "m-1", "key_cd")
+	reader := cms.NewReader(&stubReaderClient{}, "p-1", "m-1", "key_cd")
 	if _, err := reader.ListNearby(context.Background(), domain.Point{}, 0, 10); !errs.IsKind(err, errs.KindInvalidInput) {
 		t.Errorf("radius=0 err = %v; want KindInvalidInput", err)
 	}
@@ -195,7 +195,7 @@ func TestFromFields_MissingRequired(t *testing.T) {
 	client := &stubReaderClient{
 		listRes: cmsx.ListItemsResult{Items: []cmsx.ItemDTO{{ID: "i-1", Fields: map[string]any{"key_cd": "K1"}}}},
 	}
-	reader := cms.NewReader(client, "m-1", "key_cd")
+	reader := cms.NewReader(client, "p-1", "m-1", "key_cd")
 	_, _, err := reader.List(context.Background(), domain.ListFilter{})
 	if !errs.IsKind(err, errs.KindInternal) {
 		t.Errorf("err = %v; want KindInternal (schema drift)", err)
@@ -213,7 +213,7 @@ func TestFromFields_MalformedOptionalTime(t *testing.T) {
 	client := &stubReaderClient{
 		listRes: cmsx.ListItemsResult{Items: []cmsx.ItemDTO{{ID: "i-1", Fields: fields}}},
 	}
-	reader := cms.NewReader(client, "m-1", "key_cd")
+	reader := cms.NewReader(client, "p-1", "m-1", "key_cd")
 	_, _, err := reader.List(context.Background(), domain.ListFilter{})
 	if !errs.IsKind(err, errs.KindInternal) {
 		t.Errorf("err = %v; want KindInternal (optionalTime parse failure)", err)

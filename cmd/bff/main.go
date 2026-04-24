@@ -141,7 +141,7 @@ func run() error {
 	}
 
 	// --- Adapters -------------------------------------------------------
-	reader := cmsadapter.NewReader(cmsClient, model.ID, cfg.CMSKeyField)
+	reader := cmsadapter.NewReader(cmsClient, project.ID, model.ID, cfg.CMSKeyField)
 	profileRepo := userfirestore.New(fsClient, userfirestore.Config{Collection: cfg.UsersCollection})
 	authVerifier := firebaseauth.New(authClient)
 

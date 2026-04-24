@@ -141,13 +141,14 @@ func run() error {
 	})
 	defer func() { _ = cmsClient.Close(ctx) }()
 
-	// Resolve the CMS model id by walking project → model. We do this once
-	// at startup so the per-item path stays free of metadata lookups.
-	modelID, err := resolveModelID(ctx, cmsClient, cfg.CMSProjectAlias, cfg.CMSModelAlias)
+	// Resolve the CMS (projectID, modelID) pair by walking project → model.
+	// We do this once at startup so the per-item path stays free of metadata
+	// lookups.
+	projectID, modelID, err := resolveProjectAndModelID(ctx, cmsClient, cfg.CMSProjectAlias, cfg.CMSModelAlias)
 	if err != nil {
 		return err
 	}
-	repo := cms.New(cmsClient, modelID, cfg.CMSKeyField)
+	repo := cms.New(cmsClient, projectID, modelID, cfg.CMSKeyField)
 
 	psClient, err := pubsubx.NewClient(ctx, pubsubx.Config{ProjectID: cfg.GCPProjectID})
 	if err != nil {
@@ -214,28 +215,30 @@ func run() error {
 	return nil
 }
 
-// resolveModelID walks projectAlias → modelAlias to discover the CMS model
-// id. The result is cached for the rest of the run; if either lookup fails
-// or returns nil we surface a clear error so operators know the U-CSS
+// resolveProjectAndModelID walks projectAlias → modelAlias to discover the
+// CMS (projectID, modelID) pair. Both are needed because reearth-cms nests
+// item paths under /{workspace}/projects/{project}/models/{model}/items.
+// The result is cached for the rest of the run; if either lookup fails or
+// returns nil we surface a clear error so operators know the U-CSS
 // migration has not run against this CMS yet.
-func resolveModelID(ctx context.Context, c *cmsx.Client, projectAlias, modelAlias string) (string, error) {
+func resolveProjectAndModelID(ctx context.Context, c *cmsx.Client, projectAlias, modelAlias string) (string, string, error) {
 	project, err := c.FindProjectByAlias(ctx, projectAlias)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if project == nil {
-		return "", errs.Wrap("ingestion.resolve_model",
+		return "", "", errs.Wrap("ingestion.resolve_model",
 			errs.KindNotFound,
 			fmt.Errorf("project %q not found in CMS — has cmsmigrate Job run?", projectAlias))
 	}
 	model, err := c.FindModelByAlias(ctx, project.ID, modelAlias)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if model == nil {
-		return "", errs.Wrap("ingestion.resolve_model",
+		return "", "", errs.Wrap("ingestion.resolve_model",
 			errs.KindNotFound,
 			fmt.Errorf("model %q under project %q not found — has cmsmigrate Job run?", modelAlias, projectAlias))
 	}
-	return model.ID, nil
+	return project.ID, model.ID, nil
 }
