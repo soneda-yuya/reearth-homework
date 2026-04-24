@@ -45,6 +45,15 @@ func (a *Aggregator) Choropleth(ctx context.Context, filter crimemap.CrimeMapFil
 
 	counts := make(map[string]crimemap.CountryChoropleth, len(items))
 	for _, it := range items {
+		// Skip items that cannot be displayed under a country label:
+		// MOFA sometimes publishes items with country_cd but no
+		// country_name (and ingestion allows missing country_cd as of
+		// PR #86). Rendering an entry as just "" or a bare country code
+		// is worse UX than omitting it until the upstream data quality
+		// is fixed — see issue tracker link in the PR description.
+		if it.CountryCd == "" || it.CountryName == "" {
+			continue
+		}
 		entry := counts[it.CountryCd]
 		entry.CountryCd = it.CountryCd
 		entry.CountryName = it.CountryName
