@@ -25,6 +25,13 @@ resource "google_cloud_run_v2_service" "bff" {
       image = "${var.artifact_registry_url}/bff:${var.image_tag}"
 
       ports {
+        # `h2c` makes Cloud Run forward HTTP/2 (cleartext) end-to-end to the
+        # container instead of downgrading to HTTP/1.1 at the backend. The
+        # Flutter client (gRPC package) speaks gRPC-over-HTTP/2, so without
+        # this setting RPCs hang while waiting for gRPC framing on a
+        # downgraded HTTP/1.1 body. Cloud Run still fronts TLS; the `c` in
+        # h2c refers only to the frontend→container hop.
+        name           = "h2c"
         container_port = 8080
       }
 
