@@ -183,6 +183,21 @@ func TestHeatmap_ExcludesCentroidFallback(t *testing.T) {
 		if p.Weight != 1.0 {
 			t.Errorf("Weight = %v; want 1.0 (MVP default)", p.Weight)
 		}
+		// Client taps a pin → detail navigation, so KeyCd must be
+		// populated for every emitted point.
+		if p.KeyCd == "" {
+			t.Errorf("KeyCd empty on point %+v", p)
+		}
+	}
+	// Verify the keyCds match the fixture's non-centroid items (K1..K4).
+	got := map[string]bool{}
+	for _, p := range res.Points {
+		got[p.KeyCd] = true
+	}
+	for _, want := range []string{"K1", "K2", "K3", "K4"} {
+		if !got[want] {
+			t.Errorf("missing KeyCd %q in points", want)
+		}
 	}
 }
 

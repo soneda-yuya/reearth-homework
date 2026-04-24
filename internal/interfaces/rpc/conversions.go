@@ -142,6 +142,7 @@ func heatmapToProto(res crimemap.HeatmapResult) []*overseasmapv1.HeatmapPoint {
 	out := make([]*overseasmapv1.HeatmapPoint, 0, len(res.Points))
 	for _, p := range res.Points {
 		out = append(out, &overseasmapv1.HeatmapPoint{
+			KeyCd:    p.KeyCd,
 			Location: &overseasmapv1.Point{Lat: p.Location.Lat, Lng: p.Location.Lng},
 			Weight:   p.Weight,
 		})

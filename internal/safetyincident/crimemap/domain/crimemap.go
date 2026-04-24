@@ -35,8 +35,13 @@ type ChoroplethResult struct {
 }
 
 // HeatmapPoint is a single incident location. Weight exists for future
-// severity-based weighting; MVP clients all pass 1.0.
+// severity-based weighting; MVP clients all pass 1.0. KeyCd carries the
+// originating incident id so the client can navigate to the detail view
+// on pin tap — heatmap points are 1:1 with incidents today, so this is
+// unambiguous. If server-side clustering lands later, KeyCd should carry
+// the representative incident of the cluster.
 type HeatmapPoint struct {
+	KeyCd    string
 	Location safetyincident.Point
 	Weight   float64
 }
