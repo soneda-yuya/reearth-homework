@@ -1,6 +1,7 @@
 package cmsx
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/soneda-yuya/overseas-safety-map/internal/cmsmigrate/domain"
@@ -16,25 +17,59 @@ type ProjectDTO struct {
 	Description string `json:"description,omitempty"`
 }
 
-// ModelDTO mirrors one model under a project.
+// ModelDTO mirrors one model under a project. reearth-cms returns the schema
+// as a nested object and exposes its ID as a top-level schemaId. We surface
+// both plus the flattened Fields slice for callers that only care about
+// attributes.
 type ModelDTO struct {
 	ID          string     `json:"id"`
-	Alias       string     `json:"key"` // reearth-cms uses "key" as the model alias
+	Alias       string     `json:"key"`
 	Name        string     `json:"name"`
 	Description string     `json:"description,omitempty"`
-	Fields      []FieldDTO `json:"schema,omitempty"`
+	SchemaID    string     `json:"schemaId"`
+	Fields      []FieldDTO `json:"-"`
 }
 
-// FieldDTO mirrors a single field in a model.
-type FieldDTO struct {
+// modelWire is the actual wire representation we decode into. Its only purpose
+// is to absorb the nested schema.fields array before ModelDTO.UnmarshalJSON
+// promotes it onto the flat ModelDTO.Fields.
+type modelWire struct {
 	ID          string `json:"id"`
 	Alias       string `json:"key"`
-	Name        string `json:"name,omitempty"`
+	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
-	Type        string `json:"type"`
-	Required    bool   `json:"required"`
-	Unique      bool   `json:"unique"`
-	Multiple    bool   `json:"multiple"`
+	SchemaID    string `json:"schemaId"`
+	Schema      struct {
+		Fields []FieldDTO `json:"fields"`
+	} `json:"schema"`
+}
+
+// UnmarshalJSON flattens the nested schema.fields into ModelDTO.Fields so
+// callers can treat fields as a direct property of the model without caring
+// about the wire nesting. Unknown fields are tolerated by encoding/json.
+func (m *ModelDTO) UnmarshalJSON(data []byte) error {
+	var w modelWire
+	if err := json.Unmarshal(data, &w); err != nil {
+		return err
+	}
+	m.ID = w.ID
+	m.Alias = w.Alias
+	m.Name = w.Name
+	m.Description = w.Description
+	m.SchemaID = w.SchemaID
+	m.Fields = w.Schema.Fields
+	return nil
+}
+
+// FieldDTO mirrors a single field in a model's schema. reearth-cms exposes
+// "key" as the alias and does not carry a description or a unique flag on the
+// wire; those are omitted here so decoding stays faithful.
+type FieldDTO struct {
+	ID       string `json:"id"`
+	Alias    string `json:"key"`
+	Type     string `json:"type"`
+	Required bool   `json:"required"`
+	Multiple bool   `json:"multiple"`
 }
 
 // createProjectBody is the POST payload for creating a project.
@@ -51,15 +86,16 @@ type createModelBody struct {
 	Description string `json:"description,omitempty"`
 }
 
-// createFieldBody is the POST payload for creating a field under a model.
+// createFieldBody is the POST payload for creating a field under a schema.
+// reearth-cms only accepts type / key / required / multiple at create time;
+// name and description are not part of the integration API contract, and
+// unique isn't a wire concept (uniqueness is enforced via CMS model config,
+// not per-field at the HTTP layer).
 type createFieldBody struct {
-	Alias       string `json:"key"`
-	Name        string `json:"name,omitempty"`
-	Description string `json:"description,omitempty"`
-	Type        string `json:"type"`
-	Required    bool   `json:"required"`
-	Unique      bool   `json:"unique"`
-	Multiple    bool   `json:"multiple"`
+	Type     string `json:"type"`
+	Key      string `json:"key"`
+	Required bool   `json:"required,omitempty"`
+	Multiple bool   `json:"multiple,omitempty"`
 }
 
 // fieldTypeToAPI converts a domain.FieldType to the string used on the wire.
@@ -107,6 +143,13 @@ func fieldTypeFromAPI(s string) domain.FieldType {
 	default:
 		return domain.FieldTypeUnspecified
 	}
+}
+
+// ToDomainType adapts a FieldDTO's wire type string into the domain's
+// FieldType. Exported so the cmsclient adapter does not re-implement the
+// translation table.
+func (d FieldDTO) ToDomainType() domain.FieldType {
+	return fieldTypeFromAPI(d.Type)
 }
 
 // apiError decorates the HTTP status for log / metric attribution.
