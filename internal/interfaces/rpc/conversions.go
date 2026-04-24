@@ -106,9 +106,22 @@ func crimeMapFilterFromProto(f *overseasmapv1.CrimeMapFilter) crimemap.CrimeMapF
 	if f == nil {
 		return crimemap.CrimeMapFilter{}
 	}
+	// Same pitfall as listFilterFromProto: a nil *timestamppb.Timestamp
+	// passes through .AsTime() as 1970-01-01, not time.Time{}. The CMS
+	// reader uses IsZero() to decide whether to apply the leave window,
+	// so skipping the nil check turns "no filter" into "leave_date in
+	// [1970-01-01, 1970-01-01]" and silently zeroes out the heatmap /
+	// choropleth payload.
+	var leaveFrom, leaveTo time.Time
+	if ts := f.GetLeaveFrom(); ts != nil {
+		leaveFrom = ts.AsTime()
+	}
+	if ts := f.GetLeaveTo(); ts != nil {
+		leaveTo = ts.AsTime()
+	}
 	return crimemap.CrimeMapFilter{
-		LeaveFrom: f.GetLeaveFrom().AsTime(),
-		LeaveTo:   f.GetLeaveTo().AsTime(),
+		LeaveFrom: leaveFrom,
+		LeaveTo:   leaveTo,
 	}
 }
 
