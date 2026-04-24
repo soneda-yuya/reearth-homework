@@ -91,11 +91,16 @@ type createModelBody struct {
 // name and description are not part of the integration API contract, and
 // unique isn't a wire concept (uniqueness is enforced via CMS model config,
 // not per-field at the HTTP layer).
+//
+// `required` and `multiple` intentionally have no `omitempty`: empirically
+// reearth-cms returns HTTP 500 when `multiple` is missing from the body
+// (observed 2026-04-24 against cloud-hosted api.cms.reearth.io). Sending the
+// booleans explicitly — including the false zero — is the workaround.
 type createFieldBody struct {
 	Type     string `json:"type"`
 	Key      string `json:"key"`
-	Required bool   `json:"required,omitempty"`
-	Multiple bool   `json:"multiple,omitempty"`
+	Required bool   `json:"required"`
+	Multiple bool   `json:"multiple"`
 }
 
 // fieldTypeToAPI converts a domain.FieldType to the string used on the wire.
