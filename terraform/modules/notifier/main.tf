@@ -3,7 +3,7 @@ resource "google_cloud_run_v2_service" "notifier" {
   location = var.region
 
   # Cloud Run v2 defaults to deletion_protection=true, which blocks terraform
-  # from replacing a tainted revision without a manual gcloud intervention.
+  # from replacing a tainted service without a manual gcloud intervention.
   # See bff/main.tf for the rationale; same single-prod-project model applies.
   deletion_protection = false
 

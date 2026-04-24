@@ -3,11 +3,12 @@ resource "google_cloud_run_v2_service" "bff" {
   location = var.region
 
   # Cloud Run v2 defaults to deletion_protection=true, which prevents terraform
-  # from replacing a tainted revision (common during initial bring-up when the
-  # first startup probe fails). We manage the service entirely through
-  # terraform in a single prod project and rely on CI concurrency + WIF ref
-  # restrictions for guardrails, so opting out is safe and avoids a manual
-  # gcloud intervention every time a failed revision must be rolled.
+  # from replacing a tainted service/resource (common during initial bring-up
+  # when the first startup probe fails — terraform marks the service, not a
+  # revision, as tainted). We manage the service entirely through terraform in
+  # a single prod project and rely on CI concurrency + WIF ref restrictions
+  # for guardrails, so opting out is safe and avoids a manual gcloud
+  # intervention every time a failed revision must be rolled.
   deletion_protection = false
 
   ingress = "INGRESS_TRAFFIC_ALL"
