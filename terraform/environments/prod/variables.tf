@@ -29,12 +29,15 @@ variable "github_repository" {
 # ---- External configuration ------------------------------------------------
 variable "mofa_base_url" {
   type = string
-  # MOFA OpenData serves the XML downloads under /html/opendata/area/.
-  # The previous default without /area returned the HTML landing page,
-  # which the XML decoder rejected with "expected element <items> but
-  # have <html>". The code appends /newarrivalA.xml or /00A.xml under
-  # this base.
-  default = "https://www.ezairyu.mofa.go.jp/html/opendata/area"
+  # MOFA OpenData's *data* API lives at /opendata/area (NOT /html/opendata/).
+  # The /html/opendata/ path serves a browsable sample page with only 3
+  # placeholder items; the real production feed with hundreds of live
+  # advisories is at the no-html path. Confirmed against MOFA's own manual:
+  #   https://www.ezairyu.mofa.go.jp/html/opendata/support/usemanual.pdf
+  #   (§2.4.1, table 2-5 — "新着情報のアクセス方法")
+  # The code appends /newarrivalA.xml (incremental, 48h window) or
+  # /00A.xml (initial, 1-year window) under this base.
+  default = "https://www.ezairyu.mofa.go.jp/opendata/area"
 }
 
 variable "cms_base_url" {

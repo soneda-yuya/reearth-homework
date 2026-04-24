@@ -2,6 +2,17 @@
 // reconciled against the live feed on 2026-04-24 (the hypothetical layout in
 // U-ING design Q C [A] turned out to be wrong on several axes — see the
 // field tags and nested area / country elements below).
+//
+// Spec reference: https://www.ezairyu.mofa.go.jp/html/opendata/support/usemanual.pdf
+// (外務省 海外安全情報オープンデータ オープンデータ利用マニュアル 1.2 版, 2020-06-01)
+//
+//	§2.4.1 新着情報   → /opendata/area/newarrivalA.xml  (48h, ~33 items live)
+//	§2.4.2 すべての地域 → /opendata/area/00A.xml        (1 year, ~4391 items live)
+//	§2.4.3 地域別     → /opendata/area/{地域}A.xml
+//	§2.4.4 国別       → /opendata/country/{国}A.xml
+//
+// The /html/opendata/ URL path is a browsable landing page that returns only
+// 3 placeholder items; the production API path omits /html/.
 package mofa
 
 import (
