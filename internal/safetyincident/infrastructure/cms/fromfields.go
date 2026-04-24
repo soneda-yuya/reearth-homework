@@ -13,8 +13,15 @@ import (
 // fromFields is the inverse of toFields: converts the CMS Item.Fields map
 // back into a domain.SafetyIncident. Missing optional fields are tolerated
 // (MOFA frequently publishes items with empty info_name); missing required
-// fields (key_cd, leave_date, title, country_cd, geometry) surface as
-// KindInternal because they indicate schema drift, not a user bug.
+// fields (key_cd, leave_date, title, geometry) surface as KindInternal
+// because they indicate schema drift, not a user bug.
+//
+// country_cd is *not* required symmetrically with domain.MailItem.Validate:
+// the ingestion pipeline persists items without a country when neither
+// MOFA's <country> nor Mapbox's context surfaced one (rare but observed).
+// Treating it as required here would make the whole List RPC 500 on a
+// single missing-country item in the page. Downstream UI filters on
+// country_cd already tolerate the empty string.
 func fromFields(f map[string]any) (domain.SafetyIncident, error) {
 	if f == nil {
 		return domain.SafetyIncident{}, errs.Wrap("cms.from_fields",
@@ -29,10 +36,7 @@ func fromFields(f map[string]any) (domain.SafetyIncident, error) {
 	if err != nil {
 		return domain.SafetyIncident{}, err
 	}
-	countryCd, err := requireString(f, "country_cd")
-	if err != nil {
-		return domain.SafetyIncident{}, err
-	}
+	countryCd := optionalString(f, "country_cd")
 	leaveDate, err := requireTime(f, "leave_date")
 	if err != nil {
 		return domain.SafetyIncident{}, err
