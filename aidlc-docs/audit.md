@@ -1533,3 +1533,25 @@ Firestore + Firebase 依存で go.mod が大きく拡張 (cloud.google.com/go/fi
 **Context**: U-BFF の全 5 サブステージ完了見込み。U-APP (Flutter、別レポ) + 全体 Build and Test が残りの作業。
 
 ---
+
+## 全体 Build and Test 統合 runbook 生成
+
+**Timestamp**: 2026-04-24T10:40:00Z
+**User Input**: "マージ" (PR #9 マージ) + "fix/cmsx-item-pathsはマージしました"
+**AI Response**:
+1. origin/main を pull して最新 (PR #54-#63) を取り込み
+2. stash@{0} (fix/cmsx-item-paths の変更) が main に既に入っていることを確認、drop
+3. `feature/global-build-test` branch を作成
+4. `aidlc-docs/construction/build-and-test/integration-runbook.md` を新規生成:
+   - §1 目的: MOFA → U-ING → U-NTF → FCM → Flutter + BFF ⇄ Flutter の 7 項目
+   - §2 事前準備: Terraform apply / CI デプロイ / Flutter 実機
+   - §3 実行手順: U-CSS → U-ING → U-NTF → U-BFF → U-APP → OTel trace の順序付き
+   - §4 トラブルシューティング: 各 Unit runbook への誘導込み
+   - §5 観測ポイント: 統合ビュー
+   - §6 実行記録: 3 項目プレースホルダー
+   - §7 非スコープ / §8 関連ドキュメント
+5. aidlc-state.md 更新: U-APP 完走 + 全体 B&T 段階へ
+
+**Context**: AI-DLC の CONSTRUCTION フェーズが全ユニット完走。本 PR マージで実装側は Operations プレースホルダーを残して完了。
+
+---

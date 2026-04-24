@@ -5,7 +5,7 @@
 - **プロジェクトタイプ**: グリーンフィールド
 - **開始日**: 2026-04-20T17:55:00Z（アイデア変更のリセット）
 - **現在のフェーズ**: CONSTRUCTION
-- **現在のステージ**: U-BFF（Connect Server Unit、Sprint 3）／ Build and Test runbook template 生成完了、PR レビュー待ち
+- **現在のステージ**: 全体 Build and Test 統合 runbook 生成完了、PR レビュー待ち（最終ステージ）
 
 ## ワークフロー圧縮方針（2026-04-22 採用）
 **U-CSS 以降の Unit は Functional Design / NFR Requirements / NFR Design を「Minimal 合本版」1 ドキュメントにまとめる**。U-PLT で共通規約を確定したため、各 Unit 固有の内容のみを簡潔に記述する。Infrastructure Design / Code Generation / Build & Test は従来どおり独立して実施する。
@@ -93,10 +93,14 @@
 - [x] コード生成 計画（PR #47 merged 2026-04-23、Phase 1-9 + Q A-F 全 A）
 - [x] コード生成 PR A（Phase 1-5: proto + domain + application + infrastructure + interfaces）— PR #49 merged 2026-04-23（Copilot 3 round 対応含む）
 - [x] コード生成 PR B（Phase 6-9: Composition Root + Terraform + Docs + CI）— PR #50 merged 2026-04-24（Copilot 1 round 対応含む）
-- [ ] ビルドとテスト（Build and Test runbook template、実 CMS / Firebase 疎通は運用フェーズで追記）— 生成済み、PR レビュー待ち
+- [x] ビルドとテスト（Build and Test runbook template）— PR #51 merged 2026-04-24、実 CMS / Firebase 疎通は運用フェーズで追記
 
-#### U-CSS / U-ING / U-BFF / U-NTF / U-APP
-- [ ] 各 Unit を同じ 6 サブステージでループ
+#### U-APP（別レポ `overseas-safety-map-app`、Flutter）
+- [x] 全 8 サブステージ完了（Design Plan → Design → Infra Plan → Infra → Code Gen Plan → Code PR A/B/C → Build and Test runbook）
+- 参照: https://github.com/soneda-yuya/overseas-safety-map-app
+
+#### 全体 Build and Test（5 Unit + U-APP 統合）
+- [ ] 統合 runbook 生成済、PR レビュー待ち（実機疎通は運用フェーズで §6 に記録）
 
 ### 🟡 OPERATIONS フェーズ
 - [ ] オペレーション（プレースホルダー）
