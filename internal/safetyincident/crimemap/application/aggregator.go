@@ -98,6 +98,7 @@ func (a *Aggregator) Heatmap(ctx context.Context, filter crimemap.CrimeMapFilter
 			continue
 		}
 		points = append(points, crimemap.HeatmapPoint{
+			KeyCd:    it.KeyCd,
 			Location: it.Geometry,
 			Weight:   1.0,
 		})

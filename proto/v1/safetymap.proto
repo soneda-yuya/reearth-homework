@@ -93,6 +93,12 @@ message CountryChoropleth {
 message HeatmapPoint {
   Point location = 1;
   double weight = 2;
+  // key_cd identifies the SafetyIncident this point represents, so the
+  // client can navigate to the detail screen on pin tap. Heatmap points
+  // are 1:1 with incidents in the current implementation (no clustering
+  // yet); if server-side clustering lands later, this field should carry
+  // a representative incident for the cluster.
+  string key_cd = 3;
 }
 
 message GetChoroplethRequest { CrimeMapFilter filter = 1; }
