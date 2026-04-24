@@ -31,7 +31,9 @@ locals {
 
     # Data + messaging
     "roles/secretmanager.admin",
-    "roles/pubsub.editor",
+    # pubsub.editor lacks topics.getIamPolicy which terraform needs to refresh
+    # google_pubsub_topic_iam_member bindings (DLQ publisher grant).
+    "roles/pubsub.admin",
     "roles/datastore.owner",
     "roles/cloudscheduler.admin",
 

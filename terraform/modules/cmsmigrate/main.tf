@@ -47,8 +47,11 @@ resource "google_cloud_run_v2_job" "cmsmigrate" {
 
         resources {
           limits = {
-            cpu    = "1"
-            memory = "256Mi"
+            cpu = "1"
+            # Cloud Run Jobs gen2 (CPU always allocated) requires >= 512Mi.
+            # 256Mi is enough for cmsmigrate itself but the platform floor is
+            # higher.
+            memory = "512Mi"
           }
         }
       }
