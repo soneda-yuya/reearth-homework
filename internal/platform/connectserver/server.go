@@ -10,6 +10,9 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
 	"github.com/soneda-yuya/overseas-safety-map/internal/platform/observability"
 )
 
@@ -88,9 +91,15 @@ func (s *Server) buildMux() *http.ServeMux {
 // On cancellation it drains in-flight requests up to ShutdownTimeout.
 func (s *Server) Start(ctx context.Context) error {
 	mux := s.buildMux()
+	// Wrap with h2c so the server speaks cleartext HTTP/2 (in addition to
+	// HTTP/1.1) — Cloud Run's `ports.name = "h2c"` forwards HTTP/2 to the
+	// container without TLS, and without this wrapper plain http.Server
+	// rejects it. Required for gRPC clients (e.g. the Flutter app's grpc
+	// package) which need end-to-end HTTP/2 framing.
+	h2s := &http2.Server{}
 	s.httpServer = &http.Server{
 		Addr:              fmt.Sprintf(":%d", s.cfg.Port),
-		Handler:           mux,
+		Handler:           h2c.NewHandler(mux, h2s),
 		ReadTimeout:       s.cfg.ReadTimeout,
 		WriteTimeout:      s.cfg.WriteTimeout,
 		ReadHeaderTimeout: s.cfg.ReadHeader,
