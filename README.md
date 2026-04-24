@@ -2,7 +2,7 @@
 
 外務省 海外安全情報オープンデータを取り込み、LLM で発生地を抽出してジオコーディングし、[reearth-cms](https://github.com/reearth/reearth-cms) に蓄積して Flutter アプリ（iOS/Android）で地図・一覧・詳細・犯罪マップとして閲覧できる MVP プロジェクトです。
 
-本リポジトリは **Go サーバーモノレポ**（ingestion / bff / notifier / cmsmigrate）です。Flutter アプリは別リポジトリ `overseas-safety-map-app`（未作成、U-APP で追加）。
+本リポジトリは **Go サーバーモノレポ**（ingestion / bff / notifier / cmsmigrate）です。Flutter アプリは別リポジトリ [`overseas-safety-map-app`](https://github.com/soneda-yuya/overseas-safety-map-app)（Clean Architecture + MVVM + Riverpod）。
 
 ## アーキテクチャ概要
 
@@ -310,14 +310,11 @@ cmd/                 4 Deployable の main（Composition Root）
 internal/
   platform/          observability / config / connectserver / retry / ratelimit / SDK wrapper
   shared/            errs / clock / validate
-  cmsmigrate/        U-CSS で追加（DDD: domain / application / infrastructure）
-  safetyincident/    U-ING で追加（DDD: domain / application / infrastructure）
-  notification/      U-NTF で追加（DDD: domain / application / infrastructure）
-  <bounded-context>/ 後続 Unit で追加（user）
-    domain/
-    application/
-    infrastructure/
-  interfaces/        後続 Unit で追加（rpc / job）
+  cmsmigrate/        Bounded Context（DDD: domain / application / infrastructure）
+  safetyincident/    Bounded Context（crimemap subdomain 含む）
+  notification/      Bounded Context
+  user/              Bounded Context
+  interfaces/        rpc（Connect handler）/ job エントリ
 proto/v1/            Connect + Pub/Sub スキーマ（Go/Dart の生成ソース）
 gen/go/v1/           buf generate 出力
 terraform/           GCP インフラ IaC
@@ -340,6 +337,9 @@ aidlc-docs/          AI-DLC 設計ドキュメント
 - [U-CSS 設計・実装](aidlc-docs/construction/U-CSS/)
 - [U-ING 設計・実装](aidlc-docs/construction/U-ING/)
 - [U-NTF 設計・実装](aidlc-docs/construction/U-NTF/)
+- [U-BFF 設計・実装](aidlc-docs/construction/U-BFF/)
+- [U-APP 設計・実装](https://github.com/soneda-yuya/overseas-safety-map-app/tree/main/aidlc-docs/construction/U-APP)（別リポ `overseas-safety-map-app`）
+- [全体 Build and Test（統合 runbook）](aidlc-docs/construction/build-and-test/)
 
 ## ライセンス / データ出典
 
