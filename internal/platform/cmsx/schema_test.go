@@ -44,14 +44,14 @@ func newClient(h http.HandlerFunc) (*cmsx.Client, *httptest.Server) {
 func TestFindProjectByAlias_Hit(t *testing.T) {
 	t.Parallel()
 	c, srv := newClient(func(w http.ResponseWriter, r *http.Request) {
-		if got, want := r.URL.Path, "/api/workspaces/ws-1/projects"; got != want {
+		if got, want := r.URL.Path, "/api/ws-1/projects"; got != want {
 			t.Errorf("path = %q want %q", got, want)
 		}
 		if got := r.Header.Get("Authorization"); got != "Bearer tok" {
 			t.Errorf("auth header = %q", got)
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"items": []map[string]any{
+			"projects": []map[string]any{
 				{"id": "p-1", "alias": "other"},
 				{"id": "p-2", "alias": "wanted", "name": "W"},
 			},
@@ -74,7 +74,7 @@ func TestFindProjectByAlias_Hit(t *testing.T) {
 func TestFindProjectByAlias_Miss(t *testing.T) {
 	t.Parallel()
 	c, srv := newClient(func(w http.ResponseWriter, _ *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"projects": []any{}})
 	})
 	defer srv.Close()
 
@@ -93,6 +93,9 @@ func TestCreateProject_SendsBody(t *testing.T) {
 	c, srv := newClient(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s", r.Method)
+		}
+		if got, want := r.URL.Path, "/api/ws-1/projects"; got != want {
+			t.Errorf("path = %q want %q", got, want)
 		}
 		if got := r.Header.Get("Content-Type"); got != "application/json" {
 			t.Errorf("content-type = %q", got)
@@ -172,7 +175,7 @@ func TestFindProjectByAlias_TransientThenSuccess(t *testing.T) {
 			return
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"items": []map[string]any{{"id": "p-1", "alias": "demo"}},
+			"projects": []map[string]any{{"id": "p-1", "alias": "demo"}},
 		})
 	})
 	defer srv.Close()
@@ -189,29 +192,33 @@ func TestFindProjectByAlias_TransientThenSuccess(t *testing.T) {
 	}
 }
 
+// TestFindFieldByAlias_ParsesSchema covers reearth-cms's nested schema shape:
+// GET .../models/{id} returns {id, key, schemaId, schema:{fields:[...]}} and
+// our DTO unmarshaller flattens schema.fields so callers see them as
+// ModelDTO.Fields.
 func TestFindFieldByAlias_ParsesSchema(t *testing.T) {
 	t.Parallel()
 	c, srv := newClient(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("method = %s, want GET", r.Method)
 		}
-		if got, want := r.URL.Path, "/api/models/m-1"; got != want {
+		if got, want := r.URL.Path, "/api/ws-1/projects/p-1/models/m-1"; got != want {
 			t.Errorf("path = %q want %q", got, want)
 		}
 		if got := r.Header.Get("Authorization"); got != "Bearer tok" {
 			t.Errorf("auth header = %q", got)
 		}
 		_, _ = w.Write([]byte(`{
-			"id":"m-1","key":"thing","name":"Thing",
-			"schema":[
-				{"id":"f-a","key":"id","type":"text","required":true,"unique":true},
+			"id":"m-1","key":"thing","name":"Thing","schemaId":"s-1",
+			"schema":{"id":"s-1","fields":[
+				{"id":"f-a","key":"id","type":"text","required":true},
 				{"id":"f-b","key":"body","type":"textArea"}
-			]
+			]}
 		}`))
 	})
 	defer srv.Close()
 
-	got, err := c.FindFieldByAlias(context.Background(), "m-1", "body")
+	got, err := c.FindFieldByAlias(context.Background(), "p-1", "m-1", "body")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -225,7 +232,7 @@ func TestFindFieldByAlias_ParsesSchema(t *testing.T) {
 		t.Errorf("domain type = %s want textArea", got.ToDomainType())
 	}
 
-	miss, err := c.FindFieldByAlias(context.Background(), "m-1", "nope")
+	miss, err := c.FindFieldByAlias(context.Background(), "p-1", "m-1", "nope")
 	if err != nil || miss != nil {
 		t.Errorf("expected (nil,nil), got (%+v, %v)", miss, err)
 	}
@@ -264,13 +271,13 @@ func TestRetryPolicy_Injectable(t *testing.T) {
 func TestFindModelByAlias_Hit(t *testing.T) {
 	t.Parallel()
 	c, srv := newClient(func(w http.ResponseWriter, r *http.Request) {
-		if got, want := r.URL.Path, "/api/projects/p-1/models"; got != want {
+		if got, want := r.URL.Path, "/api/ws-1/projects/p-1/models"; got != want {
 			t.Errorf("path = %q want %q", got, want)
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"models": []map[string]any{
 				{"id": "m-other", "key": "other"},
-				{"id": "m-1", "key": "thing", "name": "Thing"},
+				{"id": "m-1", "key": "thing", "name": "Thing", "schemaId": "s-1"},
 			},
 		})
 	})
@@ -282,6 +289,9 @@ func TestFindModelByAlias_Hit(t *testing.T) {
 	}
 	if got == nil || got.ID != "m-1" || got.Alias != "thing" {
 		t.Errorf("got %+v", got)
+	}
+	if got.SchemaID != "s-1" {
+		t.Errorf("schemaId = %q, want s-1", got.SchemaID)
 	}
 }
 
@@ -308,7 +318,7 @@ func TestCreateModel_SendsBody(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s", r.Method)
 		}
-		if got, want := r.URL.Path, "/api/projects/p-1/models"; got != want {
+		if got, want := r.URL.Path, "/api/ws-1/projects/p-1/models"; got != want {
 			t.Errorf("path = %q want %q", got, want)
 		}
 		b, err := io.ReadAll(r.Body)
@@ -319,7 +329,7 @@ func TestCreateModel_SendsBody(t *testing.T) {
 			t.Fatalf("unmarshal request body: %v", err)
 		}
 		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":"m-new","key":"thing","name":"Thing"}`))
+		_, _ = w.Write([]byte(`{"id":"m-new","key":"thing","name":"Thing","schemaId":"s-new"}`))
 	})
 	defer srv.Close()
 
@@ -331,6 +341,9 @@ func TestCreateModel_SendsBody(t *testing.T) {
 	}
 	if got.ID != "m-new" || got.Alias != "thing" {
 		t.Errorf("got %+v", got)
+	}
+	if got.SchemaID != "s-new" {
+		t.Errorf("schemaId = %q, want s-new", got.SchemaID)
 	}
 	// reearth-cms uses "key" for the model alias.
 	if receivedBody["key"] != "thing" || receivedBody["name"] != "Thing" || receivedBody["description"] != "d" {
@@ -355,6 +368,10 @@ func TestCreateModel_NotFoundIsClassified(t *testing.T) {
 	}
 }
 
+// TestCreateField_SerializesType covers: (a) new path using schemaId (not
+// modelId), and (b) request body containing only type / key / required /
+// multiple — name / description / unique are explicitly NOT sent because
+// reearth-cms rejects unknown properties.
 func TestCreateField_SerializesType(t *testing.T) {
 	t.Parallel()
 	var body map[string]any
@@ -362,7 +379,7 @@ func TestCreateField_SerializesType(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
 		}
-		if got, want := r.URL.Path, "/api/models/m-1/fields"; got != want {
+		if got, want := r.URL.Path, "/api/ws-1/projects/p-1/schemata/s-1/fields"; got != want {
 			t.Errorf("path = %q want %q", got, want)
 		}
 		b, err := io.ReadAll(r.Body)
@@ -377,7 +394,7 @@ func TestCreateField_SerializesType(t *testing.T) {
 	})
 	defer srv.Close()
 
-	got, err := c.CreateField(context.Background(), "m-1", domain.FieldDefinition{
+	got, err := c.CreateField(context.Background(), "p-1", "s-1", domain.FieldDefinition{
 		Alias: "geom", Name: "Geometry", Type: domain.FieldTypeGeometryObject, Required: false,
 	})
 	if err != nil {
@@ -385,6 +402,12 @@ func TestCreateField_SerializesType(t *testing.T) {
 	}
 	if body["type"] != "geometryObject" || body["key"] != "geom" {
 		t.Errorf("body = %v", body)
+	}
+	if _, ok := body["name"]; ok {
+		t.Error("body should not include name — reearth-cms API does not accept it")
+	}
+	if _, ok := body["unique"]; ok {
+		t.Error("body should not include unique — not part of the wire contract")
 	}
 	if got.Type != "geometryObject" {
 		t.Errorf("got.Type = %s", got.Type)

@@ -18,7 +18,13 @@ type fakeApplier struct {
 	projects map[string]*application.RemoteProject
 	models   map[string]*application.RemoteModel // key = projectID + "/" + alias
 	fields   map[string]*application.RemoteField // key = modelID + "/" + alias
-	idSeq    atomic.Int64
+	// schemaToModel reverses modelID ↔ schemaID so CreateField can find the
+	// model behind a schemaID without the caller having to supply it. Real
+	// reearth-cms maintains this mapping server-side; we reproduce it here so
+	// FindField keyed by modelID stays consistent with CreateField keyed by
+	// schemaID.
+	schemaToModel map[string]string
+	idSeq         atomic.Int64
 
 	// failCreateField, if set, returns the provided error the first time a
 	// CreateField call matches fieldAlias. Used to exercise fail-fast.
@@ -40,15 +46,19 @@ type fakeApplier struct {
 	raceCreateField     string // alias the next CreateField should conflict on
 	raceCreateFieldSeed *application.RemoteField
 
-	// calls accumulates a breadcrumb trail for ordering assertions.
+	// calls accumulates a breadcrumb trail for ordering assertions. The
+	// format is deliberately stable across refactors: "Op:parentID/alias" so
+	// that tests can count matching calls with a HasPrefix check against
+	// "CreateField:m-raced/" regardless of how IDs are threaded inside.
 	calls []string
 }
 
 func newFakeApplier() *fakeApplier {
 	return &fakeApplier{
-		projects: map[string]*application.RemoteProject{},
-		models:   map[string]*application.RemoteModel{},
-		fields:   map[string]*application.RemoteField{},
+		projects:      map[string]*application.RemoteProject{},
+		models:        map[string]*application.RemoteModel{},
+		fields:        map[string]*application.RemoteField{},
+		schemaToModel: map[string]string{},
 	}
 }
 
@@ -106,25 +116,44 @@ func (f *fakeApplier) CreateModel(_ context.Context, projectID string, def domai
 	f.calls = append(f.calls, "CreateModel:"+projectID+"/"+def.Alias)
 	key := projectID + "/" + def.Alias
 	if f.raceCreateModel != "" && def.Alias == f.raceCreateModel {
-		f.models[key] = f.raceCreateModelSeed
+		// Seed the race record and register its schema → model mapping so
+		// subsequent CreateField calls under the raced model route to the
+		// right field bucket.
+		seed := f.raceCreateModelSeed
+		if seed.SchemaID == "" {
+			seed.SchemaID = f.nextID("s")
+		}
+		f.models[key] = seed
+		f.schemaToModel[seed.SchemaID] = seed.ID
 		f.raceCreateModel = ""
 		return nil, errs.Wrap("fake.CreateModel", errs.KindConflict, errors.New("raced"))
 	}
 	if _, dup := f.models[key]; dup {
 		return nil, errs.Wrap("fake.CreateModel", errs.KindConflict, errors.New("already exists"))
 	}
-	m := &application.RemoteModel{ID: f.nextID("m"), Alias: def.Alias, Name: def.Name}
+	// Synthesise a schemaId the same way reearth-cms does (one schema per
+	// model on creation) so ensureField can thread it without a real CMS.
+	schemaID := f.nextID("s")
+	modelID := f.nextID("m")
+	m := &application.RemoteModel{ID: modelID, Alias: def.Alias, Name: def.Name, SchemaID: schemaID}
 	f.models[key] = m
+	f.schemaToModel[schemaID] = modelID
 	return m, nil
 }
 
-func (f *fakeApplier) FindField(_ context.Context, modelID, alias string) (*application.RemoteField, error) {
+func (f *fakeApplier) FindField(_ context.Context, projectID, modelID, alias string) (*application.RemoteField, error) {
 	f.calls = append(f.calls, "FindField:"+modelID+"/"+alias)
+	_ = projectID // recorded via CreateField; keeping trail format stable
 	return f.fields[modelID+"/"+alias], nil
 }
 
-func (f *fakeApplier) CreateField(_ context.Context, modelID string, def domain.FieldDefinition) (*application.RemoteField, error) {
+func (f *fakeApplier) CreateField(_ context.Context, projectID, schemaID string, def domain.FieldDefinition) (*application.RemoteField, error) {
+	modelID := f.schemaToModel[schemaID]
+	// Preserve the "CreateField:<modelID>/<alias>" breadcrumb the suite
+	// relies on: this keeps race / no-op tests independent of which ID the
+	// implementation routes through.
 	f.calls = append(f.calls, "CreateField:"+modelID+"/"+def.Alias)
+	_ = projectID
 	if f.failCreateField != "" && def.Alias == f.failCreateField {
 		f.failCreateField = "" // only fail once
 		return nil, f.failErr

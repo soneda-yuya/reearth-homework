@@ -157,34 +157,39 @@ func (u *EnsureSchemaUseCase) ensureModel(ctx context.Context, projectID string,
 	ctx, span := u.tracer.Start(ctx, "cmsmigrate.EnsureModel", trace.WithAttributes(attribute.String("model.alias", def.Alias)))
 	defer span.End()
 
-	modelID, err := u.resolveModelID(ctx, projectID, def, result)
+	model, err := u.resolveModel(ctx, projectID, def, result)
 	if err != nil {
 		return err
 	}
+	if model.SchemaID == "" {
+		return errs.Wrap("cmsmigrate.application.EnsureModel.schemaId",
+			errs.KindInternal,
+			fmt.Errorf("model %q has no schemaId; reearth-cms response is missing the schemaId property", def.Alias))
+	}
 
 	for _, f := range def.Fields {
-		if err := u.ensureField(ctx, modelID, def.Alias, f, result); err != nil {
+		if err := u.ensureField(ctx, projectID, model.ID, model.SchemaID, def.Alias, f, result); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// resolveModelID returns the CMS-side ID of the model named by def, creating
-// it if absent. A 409 on CreateModel is treated as "another writer beat us"
-// and recovered via FindModel — this preserves the idempotent contract under
+// resolveModel returns the CMS-side model named by def, creating it if
+// absent. A 409 on CreateModel is treated as "another writer beat us" and
+// recovered via FindModel — this preserves the idempotent contract under
 // concurrent runs without claiming the create as our own.
-func (u *EnsureSchemaUseCase) resolveModelID(ctx context.Context, projectID string, def domain.ModelDefinition, result *EnsureSchemaResult) (string, error) {
+func (u *EnsureSchemaUseCase) resolveModel(ctx context.Context, projectID string, def domain.ModelDefinition, result *EnsureSchemaResult) (*RemoteModel, error) {
 	existing, err := u.applier.FindModel(ctx, projectID, def.Alias)
 	if err != nil {
-		return "", errs.Wrap("cmsmigrate.application.FindModel", errs.KindOf(err), err)
+		return nil, errs.Wrap("cmsmigrate.application.FindModel", errs.KindOf(err), err)
 	}
 	if existing != nil {
 		u.logger.InfoContext(ctx, "model exists",
 			"app.cmsmigrate.phase", "find-model",
 			"model.alias", def.Alias,
 		)
-		return existing.ID, nil
+		return existing, nil
 	}
 
 	created, err := u.applier.CreateModel(ctx, projectID, def)
@@ -195,10 +200,10 @@ func (u *EnsureSchemaUseCase) resolveModelID(ctx context.Context, projectID stri
 					"app.cmsmigrate.phase", "create-model",
 					"model.alias", def.Alias,
 				)
-				return refetched.ID, nil
+				return refetched, nil
 			}
 		}
-		return "", errs.Wrap("cmsmigrate.application.CreateModel", errs.KindOf(err), err)
+		return nil, errs.Wrap("cmsmigrate.application.CreateModel", errs.KindOf(err), err)
 	}
 	result.ModelsCreated = append(result.ModelsCreated, def.Alias)
 	if u.modelCreated != nil {
@@ -208,17 +213,17 @@ func (u *EnsureSchemaUseCase) resolveModelID(ctx context.Context, projectID stri
 		"app.cmsmigrate.phase", "create-model",
 		"model.alias", def.Alias,
 	)
-	return created.ID, nil
+	return created, nil
 }
 
-func (u *EnsureSchemaUseCase) ensureField(ctx context.Context, modelID, modelAlias string, def domain.FieldDefinition, result *EnsureSchemaResult) error {
+func (u *EnsureSchemaUseCase) ensureField(ctx context.Context, projectID, modelID, schemaID, modelAlias string, def domain.FieldDefinition, result *EnsureSchemaResult) error {
 	ctx, span := u.tracer.Start(ctx, "cmsmigrate.EnsureField", trace.WithAttributes(
 		attribute.String("model.alias", modelAlias),
 		attribute.String("field.alias", def.Alias),
 	))
 	defer span.End()
 
-	existing, err := u.applier.FindField(ctx, modelID, def.Alias)
+	existing, err := u.applier.FindField(ctx, projectID, modelID, def.Alias)
 	if err != nil {
 		return errs.Wrap("cmsmigrate.application.FindField", errs.KindOf(err), err)
 	}
@@ -227,12 +232,12 @@ func (u *EnsureSchemaUseCase) ensureField(ctx context.Context, modelID, modelAli
 		return nil
 	}
 
-	if _, err := u.applier.CreateField(ctx, modelID, def); err != nil {
+	if _, err := u.applier.CreateField(ctx, projectID, schemaID, def); err != nil {
 		// 409: another writer added the field after our FindField. Refetch
 		// and treat it as existing — including the drift check, so a racing
 		// writer's diverging shape still surfaces in DriftWarnings.
 		if errs.KindOf(err) == errs.KindConflict {
-			if refetched, findErr := u.applier.FindField(ctx, modelID, def.Alias); findErr == nil && refetched != nil {
+			if refetched, findErr := u.applier.FindField(ctx, projectID, modelID, def.Alias); findErr == nil && refetched != nil {
 				u.logger.InfoContext(ctx, "field exists after create conflict",
 					"app.cmsmigrate.phase", "create-field",
 					"model.alias", modelAlias,

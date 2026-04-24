@@ -22,8 +22,8 @@ type SchemaClient interface {
 	FindModelByAlias(ctx context.Context, projectID, alias string) (*cmsx.ModelDTO, error)
 	CreateModel(ctx context.Context, projectID string, def domain.ModelDefinition) (*cmsx.ModelDTO, error)
 
-	FindFieldByAlias(ctx context.Context, modelID, alias string) (*cmsx.FieldDTO, error)
-	CreateField(ctx context.Context, modelID string, def domain.FieldDefinition) (*cmsx.FieldDTO, error)
+	FindFieldByAlias(ctx context.Context, projectID, modelID, alias string) (*cmsx.FieldDTO, error)
+	CreateField(ctx context.Context, projectID, schemaID string, def domain.FieldDefinition) (*cmsx.FieldDTO, error)
 }
 
 // CMSSchemaApplier implements application.SchemaApplier against cmsx.Client.
@@ -76,16 +76,16 @@ func (a *CMSSchemaApplier) CreateModel(ctx context.Context, projectID string, de
 	return modelDTOTo(dto), nil
 }
 
-func (a *CMSSchemaApplier) FindField(ctx context.Context, modelID, alias string) (*application.RemoteField, error) {
-	dto, err := a.client.FindFieldByAlias(ctx, modelID, alias)
+func (a *CMSSchemaApplier) FindField(ctx context.Context, projectID, modelID, alias string) (*application.RemoteField, error) {
+	dto, err := a.client.FindFieldByAlias(ctx, projectID, modelID, alias)
 	if err != nil || dto == nil {
 		return nil, err
 	}
 	return fieldDTOTo(dto), nil
 }
 
-func (a *CMSSchemaApplier) CreateField(ctx context.Context, modelID string, def domain.FieldDefinition) (*application.RemoteField, error) {
-	dto, err := a.client.CreateField(ctx, modelID, def)
+func (a *CMSSchemaApplier) CreateField(ctx context.Context, projectID, schemaID string, def domain.FieldDefinition) (*application.RemoteField, error) {
+	dto, err := a.client.CreateField(ctx, projectID, schemaID, def)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,12 @@ func projectDTOTo(dto *cmsx.ProjectDTO) *application.RemoteProject {
 }
 
 func modelDTOTo(dto *cmsx.ModelDTO) *application.RemoteModel {
-	out := &application.RemoteModel{ID: dto.ID, Alias: dto.Alias, Name: dto.Name}
+	out := &application.RemoteModel{
+		ID:       dto.ID,
+		Alias:    dto.Alias,
+		Name:     dto.Name,
+		SchemaID: dto.SchemaID,
+	}
 	// Iterate by index and take the slice element address explicitly. Even
 	// with Go 1.22's per-iteration loop variable, &elem in a `for _, elem`
 	// is a recurring source of bugs in code review, so we avoid the shape.
@@ -113,7 +118,13 @@ func fieldDTOTo(dto *cmsx.FieldDTO) *application.RemoteField {
 		Alias:    dto.Alias,
 		Type:     dto.ToDomainType(),
 		Required: dto.Required,
-		Unique:   dto.Unique,
+		// Unique is intentionally left as the zero value: reearth-cms's
+		// Integration API does not surface the unique flag on field GET,
+		// so we cannot observe the server-side truth. detectFieldDrift
+		// compensates by skipping the unique comparison, preventing a
+		// false-positive drift warning for every Unique-declared field
+		// (notably key_cd).
+		Unique:   false,
 		Multiple: dto.Multiple,
 	}
 }

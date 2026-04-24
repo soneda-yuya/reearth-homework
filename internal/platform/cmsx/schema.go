@@ -18,24 +18,26 @@ import (
 	"github.com/soneda-yuya/overseas-safety-map/internal/shared/errs"
 )
 
-// FindProjectByAlias returns the project identified by alias, or (nil, nil)
-// if the CMS does not have one. The LIST-then-filter approach tolerates
-// small CMS payloads; pagination lands when we actually have many projects.
+// FindProjectByAlias returns the project identified by alias within the
+// configured workspace, or (nil, nil) if no such project exists. The LIST
+// endpoint is paginated on the CMS side (page/perPage), but project counts
+// per workspace are tiny so we rely on the default first page. Pagination
+// lands if we ever have more than ~50 projects per workspace.
 func (c *Client) FindProjectByAlias(ctx context.Context, alias string) (*ProjectDTO, error) {
 	ctx, span := observability.Tracer(ctx).Start(ctx, "cms.FindProjectByAlias",
 		trace.WithAttributes(attribute.String("project.alias", alias)))
 	defer span.End()
 
-	u := c.url("/api/workspaces/%s/projects", c.cfg.WorkspaceID)
+	u := c.url("/api/%s/projects", c.cfg.WorkspaceID)
 	var out struct {
-		Items []ProjectDTO `json:"items"`
+		Projects []ProjectDTO `json:"projects"`
 	}
 	if err := c.doJSONRetry(ctx, http.MethodGet, u, nil, &out); err != nil {
 		return nil, err
 	}
-	for i := range out.Items {
-		if out.Items[i].Alias == alias {
-			return &out.Items[i], nil
+	for i := range out.Projects {
+		if out.Projects[i].Alias == alias {
+			return &out.Projects[i], nil
 		}
 	}
 	return nil, nil
@@ -48,7 +50,7 @@ func (c *Client) CreateProject(ctx context.Context, def domain.ProjectDefinition
 	defer span.End()
 
 	body := createProjectBody{Alias: def.Alias, Name: def.Name, Description: def.Description}
-	u := c.url("/api/workspaces/%s/projects", c.cfg.WorkspaceID)
+	u := c.url("/api/%s/projects", c.cfg.WorkspaceID)
 	var out ProjectDTO
 	if err := c.doJSON(ctx, http.MethodPost, u, body, &out); err != nil {
 		return nil, err
@@ -56,14 +58,15 @@ func (c *Client) CreateProject(ctx context.Context, def domain.ProjectDefinition
 	return &out, nil
 }
 
-// FindModelByAlias returns the model for (projectID, alias), or (nil, nil)
-// when missing.
-func (c *Client) FindModelByAlias(ctx context.Context, projectID, alias string) (*ModelDTO, error) {
+// FindModelByAlias returns the model under (projectIdOrAlias, alias), or
+// (nil, nil) when missing. The projectIdOrAlias parameter accepts either
+// form — reearth-cms resolves both in the path.
+func (c *Client) FindModelByAlias(ctx context.Context, projectIDOrAlias, alias string) (*ModelDTO, error) {
 	ctx, span := observability.Tracer(ctx).Start(ctx, "cms.FindModelByAlias",
 		trace.WithAttributes(attribute.String("model.alias", alias)))
 	defer span.End()
 
-	u := c.url("/api/projects/%s/models", projectID)
+	u := c.url("/api/%s/projects/%s/models", c.cfg.WorkspaceID, projectIDOrAlias)
 	var out struct {
 		Models []ModelDTO `json:"models"`
 	}
@@ -78,14 +81,16 @@ func (c *Client) FindModelByAlias(ctx context.Context, projectID, alias string) 
 	return nil, nil
 }
 
-// CreateModel creates a model under the given project.
-func (c *Client) CreateModel(ctx context.Context, projectID string, def domain.ModelDefinition) (*ModelDTO, error) {
+// CreateModel creates a model under the given project. The returned ModelDTO
+// carries SchemaID, which callers must pass to CreateField for this model's
+// fields.
+func (c *Client) CreateModel(ctx context.Context, projectIDOrAlias string, def domain.ModelDefinition) (*ModelDTO, error) {
 	ctx, span := observability.Tracer(ctx).Start(ctx, "cms.CreateModel",
 		trace.WithAttributes(attribute.String("model.alias", def.Alias)))
 	defer span.End()
 
 	body := createModelBody{Alias: def.Alias, Name: def.Name, Description: def.Description}
-	u := c.url("/api/projects/%s/models", projectID)
+	u := c.url("/api/%s/projects/%s/models", c.cfg.WorkspaceID, projectIDOrAlias)
 	var out ModelDTO
 	if err := c.doJSON(ctx, http.MethodPost, u, body, &out); err != nil {
 		return nil, err
@@ -93,14 +98,15 @@ func (c *Client) CreateModel(ctx context.Context, projectID string, def domain.M
 	return &out, nil
 }
 
-// FindFieldByAlias returns the field for (modelID, alias), or (nil, nil)
-// when missing.
-func (c *Client) FindFieldByAlias(ctx context.Context, modelID, alias string) (*FieldDTO, error) {
+// FindFieldByAlias returns the field under the given model, or (nil, nil)
+// when missing. reearth-cms nests fields inside the model's schema object,
+// so we GET the model and scan the decoded Fields.
+func (c *Client) FindFieldByAlias(ctx context.Context, projectIDOrAlias, modelIDOrKey, alias string) (*FieldDTO, error) {
 	ctx, span := observability.Tracer(ctx).Start(ctx, "cms.FindFieldByAlias",
 		trace.WithAttributes(attribute.String("field.alias", alias)))
 	defer span.End()
 
-	u := c.url("/api/models/%s", modelID)
+	u := c.url("/api/%s/projects/%s/models/%s", c.cfg.WorkspaceID, projectIDOrAlias, modelIDOrKey)
 	var out ModelDTO
 	if err := c.doJSONRetry(ctx, http.MethodGet, u, nil, &out); err != nil {
 		return nil, err
@@ -113,22 +119,21 @@ func (c *Client) FindFieldByAlias(ctx context.Context, modelID, alias string) (*
 	return nil, nil
 }
 
-// CreateField creates a field on the given model.
-func (c *Client) CreateField(ctx context.Context, modelID string, def domain.FieldDefinition) (*FieldDTO, error) {
+// CreateField creates a field on the given schema. Unlike the previous CMS
+// API hypothesis, fields belong to a schema (not directly to a model); the
+// schemaId comes from the ModelDTO returned by CreateModel / FindModelByAlias.
+func (c *Client) CreateField(ctx context.Context, projectIDOrAlias, schemaID string, def domain.FieldDefinition) (*FieldDTO, error) {
 	ctx, span := observability.Tracer(ctx).Start(ctx, "cms.CreateField",
 		trace.WithAttributes(attribute.String("field.alias", def.Alias)))
 	defer span.End()
 
 	body := createFieldBody{
-		Alias:       def.Alias,
-		Name:        def.Name,
-		Description: def.Description,
-		Type:        fieldTypeToAPI(def.Type),
-		Required:    def.Required,
-		Unique:      def.Unique,
-		Multiple:    def.Multiple,
+		Type:     fieldTypeToAPI(def.Type),
+		Key:      def.Alias,
+		Required: def.Required,
+		Multiple: def.Multiple,
 	}
-	u := c.url("/api/models/%s/fields", modelID)
+	u := c.url("/api/%s/projects/%s/schemata/%s/fields", c.cfg.WorkspaceID, projectIDOrAlias, schemaID)
 	var out FieldDTO
 	if err := c.doJSON(ctx, http.MethodPost, u, body, &out); err != nil {
 		return nil, err
@@ -230,11 +235,4 @@ func (c *Client) doOnce(ctx context.Context, method, u string, in, out any) erro
 	default:
 		return errs.Wrap("cmsx.unexpected", errs.KindInternal, apiErr)
 	}
-}
-
-// ToDomainType adapts a FieldDTO's wire type string into the domain's
-// FieldType. Exported so the cmsclient adapter does not re-implement the
-// translation table.
-func (d FieldDTO) ToDomainType() domain.FieldType {
-	return fieldTypeFromAPI(d.Type)
 }

@@ -15,13 +15,18 @@ type stubClient struct {
 	projects map[string]*cmsx.ProjectDTO
 	models   map[string]*cmsx.ModelDTO
 	fields   map[string]*cmsx.FieldDTO
+	// schemaToModel mirrors the server-side mapping between a model and its
+	// schema so CreateField (keyed by schemaId) can store fields under the
+	// modelId that FindField looks up by.
+	schemaToModel map[string]string
 }
 
 func newStub() *stubClient {
 	return &stubClient{
-		projects: map[string]*cmsx.ProjectDTO{},
-		models:   map[string]*cmsx.ModelDTO{},
-		fields:   map[string]*cmsx.FieldDTO{},
+		projects:      map[string]*cmsx.ProjectDTO{},
+		models:        map[string]*cmsx.ModelDTO{},
+		fields:        map[string]*cmsx.FieldDTO{},
+		schemaToModel: map[string]string{},
 	}
 }
 
@@ -40,22 +45,27 @@ func (s *stubClient) FindModelByAlias(_ context.Context, projectID, alias string
 }
 
 func (s *stubClient) CreateModel(_ context.Context, projectID string, def domain.ModelDefinition) (*cmsx.ModelDTO, error) {
-	m := &cmsx.ModelDTO{ID: "m-" + def.Alias, Alias: def.Alias, Name: def.Name}
+	schemaID := "s-" + def.Alias
+	m := &cmsx.ModelDTO{ID: "m-" + def.Alias, Alias: def.Alias, Name: def.Name, SchemaID: schemaID}
 	s.models[projectID+"/"+def.Alias] = m
+	s.schemaToModel[schemaID] = m.ID
 	return m, nil
 }
 
-func (s *stubClient) FindFieldByAlias(_ context.Context, modelID, alias string) (*cmsx.FieldDTO, error) {
+func (s *stubClient) FindFieldByAlias(_ context.Context, projectID, modelID, alias string) (*cmsx.FieldDTO, error) {
+	_ = projectID
 	return s.fields[modelID+"/"+alias], nil
 }
 
-func (s *stubClient) CreateField(_ context.Context, modelID string, def domain.FieldDefinition) (*cmsx.FieldDTO, error) {
+func (s *stubClient) CreateField(_ context.Context, projectID, schemaID string, def domain.FieldDefinition) (*cmsx.FieldDTO, error) {
+	_ = projectID
+	modelID := s.schemaToModel[schemaID]
 	// FieldType.String() is the canonical wire name (same one cmsx serialises
 	// over HTTP), so the stub piggybacks on it instead of duplicating the
 	// mapping table.
 	dto := &cmsx.FieldDTO{
 		ID: "f-" + def.Alias, Alias: def.Alias, Type: def.Type.String(),
-		Required: def.Required, Unique: def.Unique, Multiple: def.Multiple,
+		Required: def.Required, Multiple: def.Multiple,
 	}
 	s.fields[modelID+"/"+def.Alias] = dto
 	return dto, nil
@@ -96,9 +106,13 @@ func TestAdapter_CreateFieldTranslatesTypes(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	s := newStub()
+	// Seed a model so schemaToModel knows where to route the field.
+	if _, err := s.CreateModel(ctx, "p-1", domain.ModelDefinition{Alias: "thing", Name: "Thing"}); err != nil {
+		t.Fatalf("seed CreateModel: %v", err)
+	}
 	a := cmsclient.NewWithClient(s)
 
-	got, err := a.CreateField(ctx, "m-1", domain.FieldDefinition{
+	got, err := a.CreateField(ctx, "p-1", "s-thing", domain.FieldDefinition{
 		Alias: "geom", Name: "Geometry", Type: domain.FieldTypeGeometryObject, Required: false,
 	})
 	if err != nil {
@@ -108,8 +122,8 @@ func TestAdapter_CreateFieldTranslatesTypes(t *testing.T) {
 		t.Errorf("got.Type = %s", got.Type)
 	}
 	// And the stub kept the API-serialised form.
-	if s.fields["m-1/geom"].Type != "geometryObject" {
-		t.Errorf("stub stored wire type %q", s.fields["m-1/geom"].Type)
+	if s.fields["m-thing/geom"].Type != "geometryObject" {
+		t.Errorf("stub stored wire type %q", s.fields["m-thing/geom"].Type)
 	}
 }
 
@@ -125,20 +139,23 @@ func TestAdapter_CreateModelAndFindField(t *testing.T) {
 	if err != nil || m == nil || m.Alias != "thing" {
 		t.Fatalf("CreateModel: got %+v err %v", m, err)
 	}
+	if m.SchemaID != "s-thing" {
+		t.Errorf("SchemaID = %q, want s-thing", m.SchemaID)
+	}
 
 	// Seed a field on the stub and read it back via FindField.
-	s.fields["m-1/id"] = &cmsx.FieldDTO{
-		ID: "f-1", Alias: "id", Type: "text", Required: true, Unique: true,
+	s.fields["m-thing/id"] = &cmsx.FieldDTO{
+		ID: "f-1", Alias: "id", Type: "text", Required: true,
 	}
-	got, err := a.FindField(ctx, "m-1", "id")
+	got, err := a.FindField(ctx, "p-1", "m-thing", "id")
 	if err != nil || got == nil {
 		t.Fatalf("FindField: got %+v err %v", got, err)
 	}
-	if got.Type != domain.FieldTypeText || !got.Required || !got.Unique {
+	if got.Type != domain.FieldTypeText || !got.Required {
 		t.Errorf("FindField unexpected shape: %+v", got)
 	}
 
-	miss, err := a.FindField(ctx, "m-1", "nope")
+	miss, err := a.FindField(ctx, "p-1", "m-thing", "nope")
 	if err != nil || miss != nil {
 		t.Errorf("expected (nil,nil), got (%+v, %v)", miss, err)
 	}
@@ -161,9 +178,9 @@ func TestAdapter_FindModelIncludesFields(t *testing.T) {
 	ctx := context.Background()
 	s := newStub()
 	s.models["p-1/thing"] = &cmsx.ModelDTO{
-		ID: "m-1", Alias: "thing", Name: "Thing",
+		ID: "m-1", Alias: "thing", Name: "Thing", SchemaID: "s-1",
 		Fields: []cmsx.FieldDTO{
-			{ID: "f-1", Alias: "id", Type: "text", Required: true, Unique: true},
+			{ID: "f-1", Alias: "id", Type: "text", Required: true},
 			{ID: "f-2", Alias: "body", Type: "textArea"},
 		},
 	}
@@ -178,5 +195,8 @@ func TestAdapter_FindModelIncludesFields(t *testing.T) {
 	}
 	if m.Fields[1].Type != domain.FieldTypeTextArea {
 		t.Errorf("field[1].Type = %s", m.Fields[1].Type)
+	}
+	if m.SchemaID != "s-1" {
+		t.Errorf("SchemaID = %q, want s-1", m.SchemaID)
 	}
 }
